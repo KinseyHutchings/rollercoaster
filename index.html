@@ -150,24 +150,6 @@
             <button class="secondary-button back-button" id="back-to-editor" type="button"><span aria-hidden="true">←</span> Back to editor</button>
           </div>
 
-          <div class="metrics-grid" aria-label="Ride measurement placeholders">
-            <article class="metric-card speed-card">
-              <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>YOUR SPEED</span><span class="metric-menu">···</span></div>
-              <div class="metric-value">— <span>mph</span></div>
-              <p class="metric-caption"><span class="metric-dot mint"></span> Waiting for ride</p>
-            </article>
-            <article class="metric-card force-card">
-              <div class="metric-heading"><span class="metric-icon force-icon" aria-hidden="true">✳</span><span>RIDER G-FORCE</span><span class="metric-menu">···</span></div>
-              <div class="metric-value">— <span>g</span></div>
-              <p class="metric-caption"><span class="metric-dot coral"></span> Vertical load</p>
-            </article>
-            <article class="metric-card energy-card">
-              <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>IDEAL SPEED</span><span class="metric-menu">···</span></div>
-              <div class="metric-value">— <span>mph</span></div>
-              <p class="metric-caption">Frictionless reference</p>
-            </article>
-          </div>
-
           <div class="ride-grid">
             <section class="track-card ride-track-card" aria-label="Ride track preview">
               <div class="card-toolbar">
@@ -196,7 +178,30 @@
                 <div class="track-position-label"><span class="position-pulse"></span> STARTING CREST</div>
               </div>
             </section>
-            <section class="chart-card">
+            <div class="ride-data-panel">
+              <section class="metrics-grid" aria-label="Ride measurement placeholders">
+                <article class="metric-card speed-card">
+                  <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>VELOCITY</span></div>
+                  <div class="metric-value">— <span>mph</span></div>
+                  <p class="metric-caption"><span class="metric-dot mint"></span> Along the track</p>
+                </article>
+                <article class="metric-card force-card">
+                  <div class="metric-heading"><span class="metric-icon force-icon" aria-hidden="true">✳</span><span>RIDER G-FORCE</span></div>
+                  <div class="metric-value">— <span>g</span></div>
+                  <p class="metric-caption"><span class="metric-dot coral"></span> Vertical load</p>
+                </article>
+                <article class="metric-card energy-card">
+                  <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
+                  <div class="metric-value">— <span>kJ</span></div>
+                  <p class="metric-caption">Cart + rider · above track low point</p>
+                </article>
+                <article class="metric-card ideal-card">
+                  <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>
+                  <div class="metric-value">— <span>mph</span></div>
+                  <p class="metric-caption">Frictionless reference</p>
+                </article>
+              </section>
+              <section class="chart-card">
               <div class="chart-heading">
                 <div><p class="eyebrow">RIDE DATA</p><h3>Speed &amp; G-force</h3></div>
                 <button class="range-button" type="button" disabled>Along track <span aria-hidden="true">⌄</span></button>
@@ -217,7 +222,8 @@
                 <div class="chart-overlay">Graph fills in during a ride</div>
               </div>
               <div class="chart-footer"><span>Distance along track</span><span>LIVE DATA PREVIEW</span></div>
-            </section>
+              </section>
+            </div>
           </div>
 
           <div class="ride-footer">

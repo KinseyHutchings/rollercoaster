@@ -61,3 +61,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Build only Stage 1 from the Build stages section of `spec.md`.
 - **What you changed:** Added a static responsive editor and ride-preview layout in `index.html` and `styles.css`, with simple view switching in `app.js`. Track editing controls and ride controls are visual placeholders; no track editing or physics simulation was implemented.
 - **Whether it worked:** Yes. Opened the page in a browser, verified the Start ride and screen-switch navigation, and checked that common viewport widths do not cause horizontal overflow.
+
+## 11. Show ride measurements beside the track
+
+- **What I asked:** Adjust the design so velocity, G-force, and total potential energy appear on the same screen as the drawn roller coaster.
+- **What you changed:** Reworked the ride view into a track-and-dashboard layout with placeholders for velocity, rider G-force, total potential energy, and ideal speed. Updated `spec.md` to define potential energy relative to the track's lowest point and include it in outputs and validation.
+- **Whether it worked:** Yes. Browser checks confirmed that the track and all measurement cards are present together at 390px, 768px, and 1280px widths, with no horizontal overflow.

@@ -27,6 +27,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
   \]
 
 - The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for cart mass, rolling resistance, and drag; users do not need to enter them. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
+- Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules.
 - Treat the cart and rider as a simplified rigid system that follows the track. Calculate the signed rider G-force as the track-normal support/restraint force divided by the rider's weight. Positive values press the rider into the seat; negative values represent restraint loading. At a horizontal valley with radius \(R\):
 
   \[
@@ -46,7 +47,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 ## Outputs
 
 - Show the cart and rider moving along the track.
-- During the ride, display speed in mph and signed rider G-force in g. Convert speed from the internal units for display.
+- During the ride, display speed in mph, signed rider G-force in g, and total gravitational potential energy in kJ. Convert speed from the internal units for display.
 - Provide an optional spoken readout of speed and G-force, with a control to enable or disable narration.
 - Show plots of speed (mph) and G-force (g) against distance along the track. Label both axes and identify the current cart position.
 - Provide an ideal, frictionless speed reference based on conservation of energy.
@@ -67,6 +68,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 - In ideal mode, verify that a cart starting from rest follows \(v = \sqrt{2g(h_0-h)}\) at points below the starting height.
 - On a horizontal valley, verify the G-force against \(n = 1 + v^2/(gR)\); on a horizontal crest, verify it against \(n = 1 - v^2/(gR)\).
+- Verify that potential energy is zero at the track's lowest point and increases with cart height.
 - Verify that modeled rolling resistance and air drag do not increase the cart's mechanical energy.
 - Verify that the cart rolls back when it cannot reach the next crest.
 - Verify that crossing either G-force limit ends the run and marks the failure location.
@@ -83,8 +85,8 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 1. Mock up the page layout
 
-- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders, and graph placeholders.
-- **Check:** Editing and ride controls are easy to find, and the track and measurements have enough room to remain readable. Do not depend on working physics in this stage.
+- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders for speed, G-force, and potential energy, and graph placeholders.
+- **Check:** Editing and ride controls are easy to find, and the coaster drawing and all three ride measurements are visible together and remain readable. Do not depend on working physics in this stage.
 
 ### 2. Build the track model and editor
 
@@ -108,5 +110,5 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 6. Complete ride feedback and validation
 
-- **Build:** Speed readout in mph, optional spoken readouts, labeled speed and G-force plots with a current-position indicator, outcome markers, and final visual polish.
-- **Check:** Plotted values and units match the live readouts; narration can be enabled and disabled; rollback, failure, and completion locations are clear; all validation cases in this spec pass.
+- **Build:** Speed readout in mph, total potential-energy readout in kJ, optional spoken readouts, labeled speed and G-force plots with a current-position indicator, outcome markers, and final visual polish.
+- **Check:** Plotted values and units match the live readouts; potential energy follows cart height; narration can be enabled and disabled; rollback, failure, and completion locations are clear; all validation cases in this spec pass.
