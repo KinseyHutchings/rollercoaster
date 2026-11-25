@@ -79,3 +79,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Build only Stage 2 from the Build stages section of `spec.md`.
 - **What you changed:** Implemented meter-based track coordinates, a sampled centripetal Catmull–Rom spline, interactive point selection/dragging/keyboard adjustment, add/remove controls, and track validation. Updated Stage 2 in `spec.md` to document the interpolation and ordering checks. No ride physics was added.
 - **Whether it worked:** Browser checks passed for add/remove, drag, keyboard edits, endpoint removal, the two-point minimum, invalid-track Start blocking, and responsive widths. A standalone `node --check` could not run because Node.js is unavailable; the browser loaded and exercised the script successfully.
+
+## 14. Explain Node.js availability and review the editor script
+
+- **What I asked:** Explain why Node.js was unavailable and review the JavaScript to ensure it works correctly.
+- **What you changed:** Reviewed and exercised `app.js` in the browser, found that it allowed a track whose first section climbed above the starting point, and added a starting-crest validation with a clear message. Updated the Stage 2 check in `spec.md`.
+- **Whether it worked:** The shell confirms `node`, `nodejs`, Bun, Deno, and other checked runtimes are not on `PATH`. Browser tests passed for editing actions, validation and Start blocking, recovery, responsive widths, and no page errors.
+
+## 15. Build Stage 3 ideal motion
+
+- **What I asked:** Build only Stage 3 from the Build stages section of `spec.md`.
+- **What you changed:** Implemented gravity-only cart motion along the edited track, fixed-step simulation, live ideal-speed and potential-energy readouts, and pause/resume/reset controls. Updated `spec.md` with Stage 3 behavior and the prototype 300 kg combined cart-and-rider mass. G-force physics, resistance, charts, and narration remain out of this stage.
+- **Whether it worked:** Browser checks confirmed the speed matches the ideal energy equation as the cart moves, the cart follows the edited track, controls work, and the run reports when it reaches the track endpoint. The editor and ride layouts had no horizontal overflow at 390px, 768px, or 1280px. A standalone Node.js syntax check was unavailable; browser runtime checks succeeded.

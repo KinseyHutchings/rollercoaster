@@ -176,6 +176,7 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 
 .track-art { position: absolute; inset: 14px 14px 23px; width: calc(100% - 28px); height: calc(100% - 37px); overflow: visible; }
 .hill-fill { fill: url(#track-fill); }
+#ride-fill { fill: url(#ride-track-fill); }
 .track-support { fill: none; stroke: #24352e; stroke-linecap: round; stroke-width: 18; }
 .track-rail { fill: none; stroke: #a9dbc2; stroke-linecap: round; stroke-width: 9; }
 .track-ties path { fill: none; stroke: #87988d; stroke-linecap: round; stroke-width: 3; opacity: .7; }
@@ -279,7 +280,7 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .ride-data-panel { display: grid; min-width: 0; gap: 14px; }
 .ride-canvas { min-height: 305px; }
 .ride-canvas .track-art { inset: 16px 14px 14px; height: calc(100% - 30px); }
-.ride-status-pill { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: #7a8a80; background: #f1f5f0; font-size: 8px; }
+.ride-status-pill { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: #7a8a80; background: #f1f5f0; font-size: 8px; white-space: nowrap; }
 .track-position-label { position: absolute; top: 48%; left: 8%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid #f0ddd5; border-radius: 99px; color: #9a695a; background: rgba(255,255,255,.9); font-size: 8px; font-weight: 700; letter-spacing: .08em; }
 .position-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px #fff0ec; }
 .chart-card { min-width: 0; padding: 17px 17px 12px; }
@@ -316,6 +317,7 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .ride-controls { display: flex; align-items: center; gap: 7px; }
 .ride-controls .secondary-button { min-height: 33px; font-size: 10px; }
 .ride-controls .mockup-note { margin: 0 0 0 4px; }
+.ride-controls .secondary-button:not(:disabled) { color: var(--green-dark); }
 .page-footer { display: flex; justify-content: space-between; padding: 16px 0 22px; border-top: 1px solid rgba(29,41,37,.08); color: #9ba59e; font-size: 8px; letter-spacing: .09em; }
 .page-footer span:first-child, .page-footer span:last-child { font-weight: 700; }
 

@@ -13,12 +13,25 @@ const trackTies = document.querySelector('#editor-ties');
 const controlGroup = document.querySelector('#editor-control-points');
 const cart = document.querySelector('#editor-cart');
 const finishFlag = document.querySelector('#editor-finish');
+const rideFill = document.querySelector('#ride-fill');
+const rideSupport = document.querySelector('#ride-support');
+const rideRail = document.querySelector('#ride-rail');
+const rideCart = document.querySelector('#ride-cart');
+const rideFinishFlag = document.querySelector('#ride-finish');
 const trackStatus = document.querySelector('#track-validation');
 const trackStatusIcon = document.querySelector('#track-status-icon');
 const selectedPointName = document.querySelector('#selected-point-name');
 const addPointButton = document.querySelector('#add-point');
 const removePointButton = document.querySelector('#remove-point');
 const startButton = document.querySelector('#preview-ride');
+const pauseButton = document.querySelector('#toggle-ride');
+const resetButton = document.querySelector('#reset-ride');
+const rideStatus = document.querySelector('.ride-status-pill');
+const ridePositionLabel = document.querySelector('#ride-position-label');
+const rideControlHint = document.querySelector('#ride-control-hint');
+const velocityReadouts = document.querySelectorAll('[data-readout="velocity"]');
+const potentialEnergyReadouts = document.querySelectorAll('[data-readout="potential-energy"]');
+const idealSpeedReadouts = document.querySelectorAll('[data-readout="ideal-speed"]');
 
 const world = {
   minX: 0,
@@ -40,9 +53,24 @@ const controlPoints = [
   { x: 100, height: 19 },
 ];
 
+const gravity = 9.81;
+const combinedMassKg = 300;
+const metersPerSecondToMph = 2.2369362921;
+const simulationStep = 1 / 120;
+
 let selectedIndex = 0;
 let draggingPointerId = null;
 let trackIsValid = true;
+let motionTable = [];
+let trackLength = 0;
+let lowestTrackHeight = 0;
+let startingHeight = 0;
+let simulationDistance = 0;
+let simulationVelocity = 0;
+let simulationState = 'idle';
+let simulationFrame = null;
+let lastFrameTime = null;
+let timeAccumulator = 0;
 
 function showScreen(name) {
   for (const [screenName, screen] of Object.entries(screens)) {
@@ -150,9 +178,280 @@ function sampleSegments(segments, stepsPerSegment = 24) {
   return samples;
 }
 
+function createArcLengthTable(samples) {
+  let distance = 0;
+  const table = samples.map((point, index) => {
+    if (index > 0) {
+      distance += pointDistance(samples[index - 1], point);
+    }
+    return { ...point, distance };
+  });
+
+  return { table, length: distance };
+}
+
+function tableIndexAtDistance(distance) {
+  let lower = 0;
+  let upper = motionTable.length - 1;
+
+  while (lower < upper) {
+    const middle = Math.floor((lower + upper) / 2);
+    if (motionTable[middle].distance < distance) {
+      lower = middle + 1;
+    } else {
+      upper = middle;
+    }
+  }
+
+  return Math.max(0, lower - 1);
+}
+
+function trackPointAtDistance(distance) {
+  const clampedDistance = Math.max(0, Math.min(trackLength, distance));
+  const index = tableIndexAtDistance(clampedDistance);
+  const left = motionTable[index];
+  const right = motionTable[Math.min(index + 1, motionTable.length - 1)];
+  const segmentLength = right.distance - left.distance;
+  const fraction = segmentLength > 0 ? (clampedDistance - left.distance) / segmentLength : 0;
+
+  return {
+    x: left.x + (right.x - left.x) * fraction,
+    height: left.height + (right.height - left.height) * fraction,
+  };
+}
+
+function trackSlopeAtDistance(distance) {
+  const lowDistance = Math.max(0, distance - 0.1);
+  const highDistance = Math.min(trackLength, distance + 0.1);
+  if (highDistance <= lowDistance) {
+    return 0;
+  }
+  return (trackPointAtDistance(highDistance).height - trackPointAtDistance(lowDistance).height)
+    / (highDistance - lowDistance);
+}
+
+function updateReadouts() {
+  const position = trackPointAtDistance(simulationDistance);
+  const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - position.height));
+  const idealSpeedMph = idealSpeed * metersPerSecondToMph;
+  const speedMph = idealSpeedMph;
+  const potentialEnergyKj = combinedMassKg * gravity
+    * Math.max(0, position.height - lowestTrackHeight) / 1000;
+
+  velocityReadouts.forEach(readout => {
+    readout.textContent = speedMph.toFixed(1);
+  });
+  idealSpeedReadouts.forEach(readout => {
+    readout.textContent = idealSpeedMph.toFixed(1);
+  });
+  potentialEnergyReadouts.forEach(readout => {
+    readout.textContent = potentialEnergyKj.toFixed(1);
+  });
+
+  return position;
+}
+
+function setCartPosition(element, position, slope, direction = 1) {
+  const screenPosition = toScreen(position);
+  const pixelsPerMeterX = (world.screenMaxX - world.screenMinX) / (world.maxX - world.minX);
+  let angle = Math.atan2(-slope * world.pixelsPerMeter, pixelsPerMeterX) * 180 / Math.PI;
+  if (direction < 0) {
+    angle += 180;
+  }
+  element.setAttribute(
+    'transform',
+    `translate(${screenPosition.x.toFixed(2)} ${screenPosition.y.toFixed(2)}) rotate(${angle.toFixed(2)}) translate(-24 -42)`,
+  );
+}
+
+function updateRideScene() {
+  const position = updateReadouts();
+  const slope = trackSlopeAtDistance(simulationDistance);
+  const direction = simulationVelocity < 0 ? -1 : 1;
+  setCartPosition(rideCart, position, slope, direction);
+  setCartPosition(cart, position, slope, direction);
+  rideCart.dataset.height = position.height.toFixed(5);
+  rideCart.dataset.simulationVelocity = simulationVelocity.toFixed(7);
+  const finish = toScreen(controlPoints[controlPoints.length - 1]);
+  rideFinishFlag.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
+
+  if (simulationState === 'running') {
+    ridePositionLabel.textContent = `CART POSITION · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'paused') {
+    ridePositionLabel.textContent = `PAUSED · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'stopped') {
+    ridePositionLabel.textContent = `TRACK END · ${position.x.toFixed(1)} m`;
+  } else {
+    ridePositionLabel.textContent = 'READY AT START';
+  }
+}
+
+function updateRideControls() {
+  const isRunning = simulationState === 'running';
+  const isPaused = simulationState === 'paused';
+  pauseButton.disabled = !isRunning && !isPaused;
+  resetButton.disabled = simulationState === 'idle';
+  pauseButton.innerHTML = isPaused ? '▶ <span>Resume</span>' : 'Ⅱ <span>Pause</span>';
+  pauseButton.setAttribute('aria-label', isPaused ? 'Resume ride' : 'Pause ride');
+
+  if (isRunning) {
+    rideStatus.textContent = 'RUNNING · IDEAL MODE';
+    rideControlHint.textContent = 'Gravity only · no friction or air drag.';
+  } else if (isPaused) {
+    rideStatus.textContent = 'PAUSED';
+    rideControlHint.textContent = 'Ride paused.';
+  } else if (simulationState === 'stopped') {
+    rideStatus.textContent = 'AT TRACK END';
+    rideControlHint.textContent = 'Track endpoint reached; finish braking is a later stage.';
+  } else {
+    rideStatus.textContent = 'READY';
+    rideControlHint.textContent = 'Start your ride to begin.';
+  }
+}
+
+function stopAnimation() {
+  if (simulationFrame !== null) {
+    cancelAnimationFrame(simulationFrame);
+    simulationFrame = null;
+  }
+  lastFrameTime = null;
+  timeAccumulator = 0;
+}
+
+function lockEditor(locked) {
+  addPointButton.disabled = locked;
+  removePointButton.disabled = locked || controlPoints.length <= 2;
+  controlGroup.querySelectorAll('.control-handle').forEach(handle => {
+    handle.setAttribute('aria-disabled', String(locked));
+    handle.setAttribute('tabindex', locked ? '-1' : '0');
+  });
+}
+
+function heightLimitCrossing(startDistance, endDistance) {
+  let low = 0;
+  let high = 1;
+
+  for (let iteration = 0; iteration < 24; iteration += 1) {
+    const fraction = (low + high) / 2;
+    const distance = startDistance + (endDistance - startDistance) * fraction;
+    if (trackPointAtDistance(distance).height > startingHeight) {
+      high = fraction;
+    } else {
+      low = fraction;
+    }
+  }
+
+  return startDistance + (endDistance - startDistance) * ((low + high) / 2);
+}
+
+function advanceSimulation() {
+  const currentSlope = trackSlopeAtDistance(simulationDistance);
+  const currentAcceleration = -gravity * currentSlope;
+  const nextDistance = simulationDistance + simulationVelocity * simulationStep
+    + 0.5 * currentAcceleration * simulationStep ** 2;
+
+  if (nextDistance <= 0 || nextDistance >= trackLength) {
+    simulationDistance = Math.max(0, Math.min(trackLength, nextDistance));
+    const heightAtBoundary = trackPointAtDistance(simulationDistance).height;
+    const boundarySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - heightAtBoundary));
+    simulationVelocity = Math.sign(nextDistance - simulationDistance || simulationVelocity || 1) * boundarySpeed;
+    simulationState = 'stopped';
+    stopAnimation();
+    updateRideScene();
+    updateRideControls();
+    return;
+  }
+
+  const currentHeight = trackPointAtDistance(simulationDistance).height;
+  const nextHeight = trackPointAtDistance(nextDistance).height;
+  if (currentHeight <= startingHeight && nextHeight > startingHeight) {
+    simulationDistance = heightLimitCrossing(simulationDistance, nextDistance);
+    simulationVelocity = 0;
+    return;
+  }
+
+  const nextAcceleration = -gravity * trackSlopeAtDistance(nextDistance);
+  const nextVelocity = simulationVelocity
+    + 0.5 * (currentAcceleration + nextAcceleration) * simulationStep;
+  const direction = Math.sign(nextVelocity || nextDistance - simulationDistance || currentAcceleration || 1);
+  const energySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - nextHeight));
+  simulationVelocity = direction * energySpeed;
+  simulationDistance = nextDistance;
+}
+
+function animationFrame(timestamp) {
+  if (simulationState !== 'running') {
+    return;
+  }
+
+  if (lastFrameTime === null) {
+    lastFrameTime = timestamp;
+  }
+  const elapsed = Math.min((timestamp - lastFrameTime) / 1000, 0.05);
+  lastFrameTime = timestamp;
+  timeAccumulator += elapsed;
+
+  while (timeAccumulator >= simulationStep && simulationState === 'running') {
+    advanceSimulation();
+    timeAccumulator -= simulationStep;
+  }
+
+  updateRideScene();
+  if (simulationState === 'running') {
+    simulationFrame = requestAnimationFrame(animationFrame);
+  }
+}
+
+function startRide() {
+  if (!trackIsValid || motionTable.length < 2 || trackLength <= 0) {
+    return;
+  }
+
+  stopAnimation();
+  simulationDistance = 0;
+  simulationVelocity = 0;
+  startingHeight = controlPoints[0].height;
+  simulationState = 'running';
+  lockEditor(true);
+  showScreen('ride');
+  updateRideScene();
+  updateRideControls();
+  simulationFrame = requestAnimationFrame(animationFrame);
+}
+
+function toggleRide() {
+  if (simulationState === 'running') {
+    simulationState = 'paused';
+    stopAnimation();
+  } else if (simulationState === 'paused') {
+    simulationState = 'running';
+    lastFrameTime = null;
+    simulationFrame = requestAnimationFrame(animationFrame);
+  } else {
+    return;
+  }
+  updateRideScene();
+  updateRideControls();
+}
+
+function resetRide() {
+  stopAnimation();
+  simulationDistance = 0;
+  simulationVelocity = 0;
+  simulationState = 'idle';
+  lockEditor(false);
+  updateRideScene();
+  updateRideControls();
+  showScreen('editor');
+}
+
 function validateTrack(samples) {
   if (controlPoints.length < 2) {
     return 'Add at least two control points.';
+  }
+
+  if (controlPoints[0].height <= controlPoints[1].height) {
+    return 'The starting crest must be higher than the next control point.';
   }
 
   for (let first = 0; first < controlPoints.length; first += 1) {
@@ -262,7 +561,7 @@ function drawControlPoints() {
     );
 
     handle.addEventListener('pointerdown', event => {
-      if (event.button !== 0) {
+      if (addPointButton.disabled || event.button !== 0) {
         return;
       }
       event.preventDefault();
@@ -273,6 +572,10 @@ function drawControlPoints() {
     });
 
     handle.addEventListener('keydown', event => {
+      if (addPointButton.disabled) {
+        return;
+      }
+
       const step = event.shiftKey ? 5 : 1;
       let changed = true;
       if (event.key === 'ArrowUp') {
@@ -314,22 +617,34 @@ function renderTrack() {
   const segments = buildSplineSegments();
   const pathData = makePathData(segments);
   const samples = sampleSegments(segments);
+  const motionSamples = sampleSegments(segments, 96);
+  const arcLengthData = createArcLengthTable(motionSamples);
   const message = validateTrack(samples);
   const areaPath = `${pathData} L ${world.screenMaxX} ${world.fillBaseY} L ${world.screenMinX} ${world.fillBaseY} Z`;
 
+  motionTable = arcLengthData.table;
+  trackLength = arcLengthData.length;
+  lowestTrackHeight = Math.min(...motionSamples.map(point => point.height));
+  if (simulationState === 'idle') {
+    startingHeight = controlPoints[0].height;
+  }
   trackFill.setAttribute('d', areaPath);
   trackSupport.setAttribute('d', pathData);
   trackRail.setAttribute('d', pathData);
+  rideFill.setAttribute('d', areaPath);
+  rideSupport.setAttribute('d', pathData);
+  rideRail.setAttribute('d', pathData);
   drawTies(samples);
   drawControlPoints();
 
-  const start = toScreen(controlPoints[0]);
   const finish = toScreen(controlPoints[controlPoints.length - 1]);
-  cart.setAttribute('transform', `translate(${(start.x + 21).toFixed(2)} ${(start.y - 15).toFixed(2)})`);
+  const startSlope = trackSlopeAtDistance(0);
+  setCartPosition(cart, controlPoints[0], startSlope);
   finishFlag.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
   selectedPointName.textContent = pointLabel(selectedIndex);
   removePointButton.disabled = controlPoints.length <= 2;
   setValidationMessage(message);
+  updateRideScene();
 }
 
 function worldPointFromPointer(event) {
@@ -417,11 +732,9 @@ trackSvg.addEventListener('pointerup', endDrag);
 trackSvg.addEventListener('pointercancel', endDrag);
 addPointButton.addEventListener('click', addPoint);
 removePointButton.addEventListener('click', removePoint);
-startButton.addEventListener('click', () => {
-  if (trackIsValid) {
-    showScreen('ride');
-  }
-});
+startButton.addEventListener('click', startRide);
+pauseButton.addEventListener('click', toggleRide);
+resetButton.addEventListener('click', resetRide);
 
 for (const tab of tabs) {
   tab.addEventListener('click', () => showScreen(tab.dataset.screen));
@@ -429,3 +742,4 @@ for (const tab of tabs) {
 
 document.querySelector('#back-to-editor').addEventListener('click', () => showScreen('editor'));
 renderTrack();
+updateRideControls();

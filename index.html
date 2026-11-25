@@ -16,7 +16,7 @@
           <span>COASTER<span class="brand-light">LAB</span></span>
         </a>
         <div class="topbar-meta">
-          <span class="stage-pill"><span class="status-dot"></span> STAGE 02 · TRACK MODEL</span>
+          <span class="stage-pill"><span class="status-dot"></span> STAGE 03 · IDEAL MOTION</span>
           <span class="avatar" aria-label="Guest profile">G</span>
         </div>
       </header>
@@ -57,7 +57,7 @@
               <section class="metrics-grid editor-metrics" aria-label="Current ride measurement placeholders">
                 <article class="metric-card speed-card">
                   <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>VELOCITY</span></div>
-                  <div class="metric-value">— <span>mph</span></div>
+                  <div class="metric-value"><span data-readout="velocity">—</span> <span>mph</span></div>
                   <p class="metric-caption">Along the track</p>
                 </article>
                 <article class="metric-card force-card">
@@ -67,12 +67,12 @@
                 </article>
                 <article class="metric-card energy-card">
                   <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
-                  <div class="metric-value">— <span>kJ</span></div>
+                  <div class="metric-value"><span data-readout="potential-energy">—</span> <span>kJ</span></div>
                   <p class="metric-caption">Cart + rider · above track low point</p>
                 </article>
                 <article class="metric-card ideal-card">
                   <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>
-                  <div class="metric-value">— <span>mph</span></div>
+                  <div class="metric-value"><span data-readout="ideal-speed">—</span> <span>mph</span></div>
                   <p class="metric-caption">Frictionless reference</p>
                 </article>
               </section>
@@ -138,7 +138,7 @@
                 <button class="primary-button" id="preview-ride" type="button">
                   Start ride <span aria-hidden="true">→</span>
                 </button>
-                <p class="mockup-note">Track editing is active; ride simulation comes next.</p>
+                <p class="mockup-note">Edit the track, then start a frictionless gravity run.</p>
               </section>
               <section class="mini-card">
                 <div class="mini-card-title"><span>RIDE SNAPSHOT</span><span class="mini-sparkle" aria-hidden="true">✳</span></div>
@@ -166,31 +166,37 @@
                 <span class="ride-status-pill">READY</span>
               </div>
               <div class="track-canvas ride-canvas">
-                <svg class="track-art" viewBox="0 0 1000 470" role="img" aria-labelledby="ride-track-title ride-track-desc">
+                <svg class="track-art ride-track-art" id="ride-track" viewBox="0 0 1000 470" role="img" aria-labelledby="ride-track-title ride-track-desc">
                   <title id="ride-track-title">Ride screen track preview</title>
-                  <desc id="ride-track-desc">The same example track, with the cart at the starting crest and a finish flag.</desc>
-                  <path class="hill-fill" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252 L944 420 L56 420 Z"></path>
-                  <path class="track-support" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
-                  <path class="track-rail" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
-                  <g class="cart-illustration" transform="translate(77 118)">
+                  <desc id="ride-track-desc">The cart follows this track under gravity in ideal mode.</desc>
+                  <defs>
+                    <linearGradient id="ride-track-fill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="#b6e3d2" stop-opacity=".48"></stop>
+                      <stop offset="1" stop-color="#b6e3d2" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path class="hill-fill" id="ride-fill"></path>
+                  <path class="track-support" id="ride-support"></path>
+                  <path class="track-rail" id="ride-rail"></path>
+                  <g class="cart-illustration" id="ride-cart">
                     <rect x="0" y="12" width="48" height="26" rx="8"></rect>
                     <circle cx="12" cy="42" r="5"></circle><circle cx="37" cy="42" r="5"></circle>
                     <circle class="rider-head" cx="25" cy="2" r="7"></circle>
                     <path class="rider-body" d="M25 10v12m0-7-9 7m9-7 9 6m-9 1-7 10m7-10 8 9"></path>
                   </g>
-                  <g class="finish-flag" transform="translate(944 252)">
+                  <g class="finish-flag" id="ride-finish">
                     <path d="M0 0v-48" class="flag-pole"></path>
                     <path d="M2-47h48l-10 12 10 12H2z" class="flag-cloth"></path>
                   </g>
                 </svg>
-                <div class="track-position-label"><span class="position-pulse"></span> STARTING CREST</div>
+                <div class="track-position-label"><span class="position-pulse"></span><span id="ride-position-label">READY AT START</span></div>
               </div>
             </section>
             <div class="ride-data-panel">
               <section class="metrics-grid" aria-label="Ride measurement placeholders">
                 <article class="metric-card speed-card">
                   <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>VELOCITY</span></div>
-                  <div class="metric-value">— <span>mph</span></div>
+                  <div class="metric-value"><span data-readout="velocity">—</span> <span>mph</span></div>
                   <p class="metric-caption"><span class="metric-dot mint"></span> Along the track</p>
                 </article>
                 <article class="metric-card force-card">
@@ -200,12 +206,12 @@
                 </article>
                 <article class="metric-card energy-card">
                   <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
-                  <div class="metric-value">— <span>kJ</span></div>
+                  <div class="metric-value"><span data-readout="potential-energy">—</span> <span>kJ</span></div>
                   <p class="metric-caption">Cart + rider · above track low point</p>
                 </article>
                 <article class="metric-card ideal-card">
                   <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>
-                  <div class="metric-value">— <span>mph</span></div>
+                  <div class="metric-value"><span data-readout="ideal-speed">—</span> <span>mph</span></div>
                   <p class="metric-caption">Frictionless reference</p>
                 </article>
               </section>
@@ -237,14 +243,14 @@
           <div class="ride-footer">
             <div class="narration-placeholder"><span class="sound-icon" aria-hidden="true">♫</span><span><strong>Spoken updates</strong><small>Speed and G-force read aloud</small></span><span class="toggle-placeholder" aria-hidden="true"><i></i></span></div>
             <div class="ride-controls">
-              <button class="secondary-button" type="button" disabled>Ⅱ <span>Pause</span></button>
-              <button class="secondary-button" type="button" disabled>↻ <span>Reset</span></button>
-              <span class="mockup-note">Controls shown for layout only</span>
+              <button class="secondary-button" id="toggle-ride" type="button" disabled>Ⅱ <span>Pause</span></button>
+              <button class="secondary-button" id="reset-ride" type="button" disabled>↻ <span>Reset</span></button>
+              <span class="mockup-note" id="ride-control-hint">Start your ride to begin.</span>
             </div>
           </div>
         </section>
       </main>
-      <footer class="page-footer"><span>COASTER LAB</span><span>A little physics. A lot of fun.</span><span>STAGE 02 TRACK MODEL</span></footer>
+      <footer class="page-footer"><span>COASTER LAB</span><span>A little physics. A lot of fun.</span><span>STAGE 03 IDEAL MOTION</span></footer>
     </div>
   </body>
 </html>
