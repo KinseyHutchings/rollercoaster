@@ -63,7 +63,6 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 - Show the cart and rider moving along the track.
 - During the ride, display speed in mph, signed rider G-force in g, and total gravitational potential energy in kJ. Convert speed from the internal units for display.
 - Provide a rider-mass control in kilograms and show rider and total vehicle mass beside the potential-energy readout.
-- Provide an optional spoken readout of speed and G-force, with a control to enable or disable narration.
 - Show plots of speed (mph) and G-force (g) against distance along the track. Label both axes and identify the current cart position.
 - Provide an ideal, frictionless speed reference based on conservation of energy.
 - Mark the location of a rollback, G-force failure, or finish crossing on the track, and state the outcome. For a rollback, explain that the cart lacked enough velocity to clear the next hill and suggest increasing the starting drop or lowering the next crest.
@@ -135,5 +134,5 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 
 ### 7. Complete ride feedback and validation
 
-- **Build:** Speed readout in mph, total potential-energy readout in kJ, optional spoken readouts, labeled speed and G-force plots with a current-position indicator, outcome markers, and final visual polish.
-- **Check:** Plotted values and units match the live readouts; potential energy follows cart height; narration can be enabled and disabled; rollback, failure, and completion locations are clear; all validation cases in this spec pass.
+- **Build:** Speed readout in mph, total potential-energy readout in kJ, labeled speed (mph) and rider G-force (g) plots against track distance with current-position indicators, clear rollback/failure/completion markers, and responsive final visual polish. Clear ride data when a new run starts or the user resets, replaces, or edits the track.
+- **Check:** Plotted values and units match the live readouts, and each plot cursor follows the cart; potential energy follows cart height; rollback, failure, and completion locations are clear; charts and controls fit narrow screens without horizontal overflow; all validation cases in this spec pass.

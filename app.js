@@ -19,8 +19,19 @@ const rideRail = document.querySelector('#ride-rail');
 const rideCart = document.querySelector('#ride-cart');
 const rideFinishFlag = document.querySelector('#ride-finish');
 const rideFailureMarker = document.querySelector('#ride-failure-marker');
+const rideCompletionMarker = document.querySelector('#ride-completion-marker');
 const rideRollbackMarker = document.querySelector('#ride-rollback-marker');
 const rollbackNotice = document.querySelector('#rollback-notice');
+const speedChart = document.querySelector('#speed-chart');
+const speedChartPath = document.querySelector('#speed-chart-path');
+const speedChartCursor = document.querySelector('#speed-chart-cursor');
+const speedAxisTop = document.querySelector('#speed-axis-top');
+const speedAxisMiddle = document.querySelector('#speed-axis-middle');
+const gForceChart = document.querySelector('#g-force-chart');
+const gForceChartPath = document.querySelector('#g-force-chart-path');
+const gForceChartCursor = document.querySelector('#g-force-chart-cursor');
+const chartOverlay = document.querySelector('#chart-overlay');
+const chartCurrentPosition = document.querySelector('#chart-current-position');
 const trackStatus = document.querySelector('#track-validation');
 const trackStatusIcon = document.querySelector('#track-status-icon');
 const selectedPointName = document.querySelector('#selected-point-name');
@@ -99,6 +110,7 @@ let lastFrameTime = null;
 let timeAccumulator = 0;
 let liftConfiguration = null;
 let liftActive = false;
+let rideSamples = [];
 
 function showScreen(name) {
   for (const [screenName, screen] of Object.entries(screens)) {
@@ -425,6 +437,74 @@ function updateReadouts() {
   return position;
 }
 
+function chartX(distance) {
+  const progress = trackLength > 0 ? Math.max(0, Math.min(1, distance / trackLength)) : 0;
+  return 42 + progress * 458;
+}
+
+function chartY(value, minimum, maximum) {
+  const progress = Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum)));
+  return 94 - progress * 80;
+}
+
+function recordRideSample(force = false) {
+  const previous = rideSamples[rideSamples.length - 1];
+  if (!force && previous && Math.abs(simulationDistance - previous.distance) < 0.25) {
+    return;
+  }
+
+  rideSamples.push({
+    distance: simulationDistance,
+    speedMph: Math.abs(simulationVelocity) * metersPerSecondToMph,
+    gForce: riderGForceAt(simulationDistance, simulationVelocity),
+  });
+}
+
+function rideChartPath(valueKey, minimum, maximum) {
+  return rideSamples.map((sample, index) => {
+    const command = index === 0 ? 'M' : 'L';
+    return `${command}${chartX(sample.distance).toFixed(2)} ${chartY(sample[valueKey], minimum, maximum).toFixed(2)}`;
+  }).join(' ');
+}
+
+function updateRideCharts() {
+  const speedMph = Math.abs(simulationVelocity) * metersPerSecondToMph;
+  const riderGForce = riderGForceAt(simulationDistance, simulationVelocity);
+  const maxRecordedSpeed = Math.max(speedMph, ...rideSamples.map(sample => sample.speedMph));
+  const speedAxisMaximum = Math.max(10, Math.ceil(maxRecordedSpeed / 10) * 10);
+  const currentX = chartX(simulationDistance);
+  const speedY = chartY(speedMph, 0, speedAxisMaximum);
+  const forceY = chartY(riderGForce, -1, 4);
+
+  speedAxisTop.textContent = speedAxisMaximum.toFixed(0);
+  speedAxisMiddle.textContent = (speedAxisMaximum / 2).toFixed(0);
+  speedChartPath.setAttribute('d', rideChartPath('speedMph', 0, speedAxisMaximum));
+  gForceChartPath.setAttribute('d', rideChartPath('gForce', -1, 4));
+  for (const [chart, cursor, value, y, label] of [
+    [speedChart, speedChartCursor, speedMph, speedY, 'speed'],
+    [gForceChart, gForceChartCursor, riderGForce, forceY, 'rider G-force'],
+  ]) {
+    cursor.classList.toggle('is-visible', rideSamples.length > 0);
+    cursor.querySelector('line').setAttribute('x1', currentX.toFixed(2));
+    cursor.querySelector('line').setAttribute('x2', currentX.toFixed(2));
+    cursor.querySelector('circle').setAttribute('cx', currentX.toFixed(2));
+    cursor.querySelector('circle').setAttribute('cy', y.toFixed(2));
+    chart.setAttribute(
+      'aria-label',
+      `${label} by track distance; current ${value.toFixed(label === 'speed' ? 1 : 2)} ${label === 'speed' ? 'miles per hour' : 'g'}.`,
+    );
+  }
+  chartOverlay.hidden = rideSamples.length > 0;
+  chartCurrentPosition.textContent = rideSamples.length
+    ? `Cart position: ${simulationDistance.toFixed(1)} m`
+    : 'Cart position: — m';
+}
+
+function clearRideSamples() {
+  rideSamples = [];
+  updateRideCharts();
+}
+
 function setCartPosition(element, position, tangentAngle, direction = 1) {
   const screenPosition = toScreen(position);
   const pixelsPerMeterX = (world.screenMaxX - world.screenMinX) / (world.maxX - world.minX);
@@ -473,6 +553,10 @@ function estimatedFinishBrakingDistance(startDistance, startVelocity) {
 
 function updateRideScene() {
   const position = updateReadouts();
+  if (simulationState !== 'idle') {
+    recordRideSample(['completed', 'failed', 'stopped'].includes(simulationState));
+  }
+  updateRideCharts();
   const tangentAngle = trackTangentAngleAtDistance(simulationDistance);
   const direction = simulationVelocity < 0 ? -1 : 1;
   setCartPosition(rideCart, position, tangentAngle, direction);
@@ -485,6 +569,15 @@ function updateRideScene() {
   rideFailureMarker.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
   const failureMarkerVisible = simulationState === 'failed';
   rideFailureMarker.classList.toggle('is-visible', failureMarkerVisible);
+  const completionMarkerVisible = simulationState === 'completed';
+  rideCompletionMarker.classList.toggle('is-visible', completionMarkerVisible);
+  if (completionMarkerVisible) {
+    const completionPosition = toScreen(position);
+    rideCompletionMarker.setAttribute(
+      'transform',
+      `translate(${completionPosition.x.toFixed(2)} ${(completionPosition.y - 34).toFixed(2)})`,
+    );
+  }
   if (failureMarkerVisible) {
     const failurePosition = toScreen(position);
     rideFailureMarker.setAttribute('transform', `translate(${failurePosition.x.toFixed(2)} ${failurePosition.y.toFixed(2)})`);
@@ -810,6 +903,7 @@ function startRide() {
   startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   simulationState = 'running';
   gForceFailureLimit = null;
+  clearRideSamples();
   lockEditor(true);
   showScreen('ride');
   updateRideScene();
@@ -842,6 +936,7 @@ function resetRide() {
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;
+  clearRideSamples();
   lockEditor(false);
   renderTrack();
   updateRideControls();
@@ -866,6 +961,7 @@ function startNewTrack() {
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;
+  clearRideSamples();
   lockEditor(false);
   showScreen('editor');
   renderTrack();
@@ -882,6 +978,7 @@ function editCurrentTrack() {
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;
+  clearRideSamples();
   lockEditor(false);
   renderTrack();
   updateRideControls();

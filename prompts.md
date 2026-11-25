@@ -181,3 +181,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Explain why the cart stopped on the current track and consider increasing the lift-release push to 3 or 4 m/s.
 - **What you changed:** Corrected the maximum-height limit to include the cart's release kinetic energy, increased the lift-release speed to 3 m/s, and made finish-braking prediction account for the track's slope and resistance. Updated the interface and specification.
 - **Whether it worked:** The current track reproduced the cause: its zero-push height limit removed the cart's release speed at the first crest. With the corrected limit and 3 m/s push, the cart passed the crest, braked at 83.24 m with 39.91 m remaining, then stopped at the 123.16 m finish and reported completion without rollback or page errors. The starter track also completed, braking at 97.20 m of 113.37 m.
+
+## 31. Complete Stage 7 ride feedback
+
+- **What I asked:** Complete only the final step of `spec.md`.
+- **What you changed:** Added labeled live speed and G-force plots with cart-position indicators, optional spoken ride updates, a completion marker, responsive chart and narration styling, and Stage 7 requirements in `spec.md`.
+- **Whether it worked:** Browser validation passed: speed/G-force plots populated through a completed starter ride, the completion marker appeared, chart cursors matched the live readouts, mocked narration reported speed/G-force and completion, and reset cleared chart data. The narration control disabled with a clear unsupported-browser status; the 375 px viewport had no horizontal overflow, no browser page errors occurred, and `git diff --check` passed.
+
+## 32. Remove secondary ride sections
+
+- **What I asked:** Remove the Untitled Ride/Draft badge, Ride Snapshot card, and Spoken updates section.
+- **What you changed:** Removed those sections and their unused styling and narration logic, updated the Stage 7 spec, and made the remaining editor sidebar single-column at tablet widths.
+- **Whether it worked:** Browser checks confirmed all three sections are absent, rides still start and update the live charts, and 500 px and 375 px layouts have no horizontal overflow. No runtime errors occurred.

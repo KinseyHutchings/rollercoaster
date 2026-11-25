@@ -16,7 +16,7 @@
           <span>COASTER<span class="brand-light">LAB</span></span>
         </a>
         <div class="topbar-meta">
-          <span class="stage-pill"><span class="status-dot"></span> STAGE 06 · RIDE OUTCOMES</span>
+          <span class="stage-pill"><span class="status-dot"></span> STAGE 07 · RIDE FEEDBACK</span>
           <span class="avatar" aria-label="Guest profile">G</span>
         </div>
       </header>
@@ -44,7 +44,6 @@
               <p class="eyebrow">DESIGN MODE</p>
               <h2>Shape your track</h2>
             </div>
-            <span class="draft-pill">UNTITLED RIDE <span aria-hidden="true">·</span> DRAFT</span>
           </div>
 
           <div class="editor-grid">
@@ -150,11 +149,6 @@
                 <p class="mockup-note">Keep predicted G-force between −1 g and +4 g. An uphill start uses a powered 5 m/s lift and a 3 m/s push at the first crest.</p>
                 <button class="secondary-button new-track-button" id="new-track" type="button"><span aria-hidden="true">↻</span> Start over</button>
               </section>
-              <section class="mini-card">
-                <div class="mini-card-title"><span>RIDE SNAPSHOT</span><span class="mini-sparkle" aria-hidden="true">✳</span></div>
-                <div class="snapshot-row"><span>Track shape</span><strong>Preview only</strong></div>
-                <div class="snapshot-row"><span>Ride status</span><span class="status-chip">Not started</span></div>
-              </section>
             </aside>
           </div>
         </section>
@@ -203,6 +197,10 @@
                     <circle r="18"></circle>
                     <path d="M0-9v11m0 5v1"></path>
                   </g>
+                  <g class="completion-marker" id="ride-completion-marker" aria-label="Ride completion location">
+                    <circle r="18"></circle>
+                    <path d="M-8 0l5 5L8-7"></path>
+                  </g>
                   <g class="rollback-marker" id="ride-rollback-marker" aria-label="Rollback location">
                     <circle r="18"></circle>
                     <path d="M-7-7L7 7M7-7L-7 7"></path>
@@ -234,27 +232,49 @@
                   <p class="metric-caption">Frictionless reference</p>
                 </article>
               </section>
-              <section class="chart-card">
-              <div class="chart-heading">
-                <div><p class="eyebrow">RIDE DATA</p><h3>Speed &amp; G-force</h3></div>
-                <button class="range-button" type="button" disabled>Along track <span aria-hidden="true">⌄</span></button>
-              </div>
-              <div class="chart-legend">
-                <span><i class="chart-line speed-line"></i> Speed <b>mph</b></span>
-                <span><i class="chart-line force-line"></i> G-force <b>g</b></span>
-              </div>
-              <div class="chart-placeholder">
-                <div class="chart-y-labels"><span>HIGH</span><span>—</span><span>LOW</span></div>
-                <svg viewBox="0 0 500 170" role="img" aria-label="Empty chart placeholder for speed and G-force over track distance">
-                  <path class="chart-gridline" d="M0 18H500M0 82H500M0 146H500"></path>
-                  <path class="chart-axis" d="M0 0V146H500"></path>
-                  <path class="chart-speed-placeholder" d="M12 128 C75 124 90 72 145 82 S224 128 275 78 S350 30 390 67 S449 105 488 35"></path>
-                  <path class="chart-force-placeholder" d="M12 102 C66 111 99 133 145 116 S218 42 275 60 S339 129 390 108 S449 55 488 76"></path>
-                  <text x="0" y="165">START</text><text x="450" y="165">FINISH</text>
-                </svg>
-                <div class="chart-overlay">Graph fills in during a ride</div>
-              </div>
-              <div class="chart-footer"><span>Distance along track</span><span>LIVE DATA PREVIEW</span></div>
+              <section class="chart-card" aria-label="Ride speed and G-force charts">
+                <div class="chart-heading">
+                  <div><p class="eyebrow">RIDE DATA</p><h3>Ride measurements</h3></div>
+                  <span class="chart-axis-note">Along track</span>
+                </div>
+                <div class="ride-plots" id="ride-plots">
+                  <section class="ride-plot" aria-label="Speed plot">
+                    <div class="plot-title"><h4>Speed</h4><span>mph</span></div>
+                    <svg class="ride-chart" id="speed-chart" viewBox="0 0 520 132" role="img" aria-label="Speed in miles per hour by distance along the track">
+                      <path class="chart-gridline" d="M42 14H500M42 54H500M42 94H500"></path>
+                      <path class="chart-axis" d="M42 14V94H500"></path>
+                      <text class="chart-tick" id="speed-axis-top" x="36" y="17" text-anchor="end">5</text>
+                      <text class="chart-tick" id="speed-axis-middle" x="36" y="57" text-anchor="end">2.5</text>
+                      <text class="chart-tick" x="36" y="97" text-anchor="end">0</text>
+                      <text class="chart-endpoint" x="42" y="122">START</text>
+                      <text class="chart-endpoint" x="500" y="122" text-anchor="end">FINISH</text>
+                      <path class="chart-series speed-series" id="speed-chart-path"></path>
+                      <g class="chart-position-indicator" id="speed-chart-cursor">
+                        <line x1="42" y1="14" x2="42" y2="94"></line>
+                        <circle cx="42" cy="94" r="4"></circle>
+                      </g>
+                    </svg>
+                  </section>
+                  <section class="ride-plot" aria-label="G-force plot">
+                    <div class="plot-title"><h4>Rider G-force</h4><span>g</span></div>
+                    <svg class="ride-chart" id="g-force-chart" viewBox="0 0 520 132" role="img" aria-label="Rider G-force in g by distance along the track">
+                      <path class="chart-gridline" d="M42 14H500M42 54H500M42 94H500"></path>
+                      <path class="chart-axis" d="M42 14V94H500"></path>
+                      <text class="chart-tick" x="36" y="17" text-anchor="end">4</text>
+                      <text class="chart-tick" x="36" y="57" text-anchor="end">1.5</text>
+                      <text class="chart-tick" x="36" y="97" text-anchor="end">−1</text>
+                      <text class="chart-endpoint" x="42" y="122">START</text>
+                      <text class="chart-endpoint" x="500" y="122" text-anchor="end">FINISH</text>
+                      <path class="chart-series force-series" id="g-force-chart-path"></path>
+                      <g class="chart-position-indicator" id="g-force-chart-cursor">
+                        <line x1="42" y1="14" x2="42" y2="94"></line>
+                        <circle cx="42" cy="54" r="4"></circle>
+                      </g>
+                    </svg>
+                  </section>
+                  <div class="chart-overlay" id="chart-overlay">Start a ride to see live plots.</div>
+                </div>
+                <div class="chart-footer"><span>Distance along track (m)</span><span id="chart-current-position">Cart position: — m</span></div>
               </section>
             </div>
           </div>
@@ -265,7 +285,6 @@
           </div>
 
           <div class="ride-footer">
-            <div class="narration-placeholder"><span class="sound-icon" aria-hidden="true">♫</span><span><strong>Spoken updates</strong><small>Speed and G-force read aloud</small></span><span class="toggle-placeholder" aria-hidden="true"><i></i></span></div>
             <div class="ride-controls">
               <button class="secondary-button" id="toggle-ride" type="button" disabled>Ⅱ <span>Pause</span></button>
               <button class="secondary-button" id="reset-ride" type="button" disabled>↻ <span>Reset</span></button>
@@ -274,7 +293,7 @@
           </div>
         </section>
       </main>
-      <footer class="page-footer"><span>COASTER LAB</span><span>A little physics. A lot of fun.</span><span>STAGE 06 RIDE OUTCOMES</span></footer>
+      <footer class="page-footer"><span>COASTER LAB</span><span>A little physics. A lot of fun.</span><span>STAGE 07 RIDE FEEDBACK</span></footer>
     </div>
   </body>
 </html>
