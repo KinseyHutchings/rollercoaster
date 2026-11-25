@@ -18,6 +18,7 @@ const rideSupport = document.querySelector('#ride-support');
 const rideRail = document.querySelector('#ride-rail');
 const rideCart = document.querySelector('#ride-cart');
 const rideFinishFlag = document.querySelector('#ride-finish');
+const rideFailureMarker = document.querySelector('#ride-failure-marker');
 const trackStatus = document.querySelector('#track-validation');
 const trackStatusIcon = document.querySelector('#track-status-icon');
 const selectedPointName = document.querySelector('#selected-point-name');
@@ -27,12 +28,14 @@ const riderMassInput = document.querySelector('#rider-mass');
 const riderMassValue = document.querySelector('#rider-mass-value');
 const startButton = document.querySelector('#preview-ride');
 const newTrackButton = document.querySelector('#new-track');
+const editCurrentTrackButton = document.querySelector('#edit-current-track');
 const pauseButton = document.querySelector('#toggle-ride');
 const resetButton = document.querySelector('#reset-ride');
 const rideStatus = document.querySelector('.ride-status-pill');
 const ridePositionLabel = document.querySelector('#ride-position-label');
 const rideControlHint = document.querySelector('#ride-control-hint');
 const velocityReadouts = document.querySelectorAll('[data-readout="velocity"]');
+const gForceReadouts = document.querySelectorAll('[data-readout="g-force"]');
 const potentialEnergyReadouts = document.querySelectorAll('[data-readout="potential-energy"]');
 const idealSpeedReadouts = document.querySelectorAll('[data-readout="ideal-speed"]');
 const riderMassReadouts = document.querySelectorAll('[data-readout="rider-mass"]');
@@ -52,9 +55,10 @@ const world = {
 
 const starterTrack = [
   { x: 0, height: 40 },
-  { x: 23, height: 0 },
-  { x: 48, height: 30 },
-  { x: 72, height: 5 },
+  { x: 26, height: 30 },
+  { x: 45, height: 37 },
+  { x: 64, height: 30 },
+  { x: 82, height: 36 },
   { x: 100, height: 19 },
 ];
 const controlPoints = starterTrack.map(point => ({ ...point }));
@@ -63,10 +67,12 @@ const gravity = 9.81;
 const cartMassKg = 225;
 const metersPerSecondToMph = 2.2369362921;
 const simulationStep = 1 / 120;
+const gForceLimits = { maximum: 4, minimum: -1 };
 
 let selectedIndex = 0;
 let draggingPointerId = null;
 let trackIsValid = true;
+let trackIsRideSafe = true;
 let motionTable = [];
 let trackLength = 0;
 let lowestTrackHeight = 0;
@@ -74,6 +80,7 @@ let startingHeight = 0;
 let simulationDistance = 0;
 let simulationVelocity = 0;
 let simulationState = 'idle';
+let gForceFailureLimit = null;
 let simulationFrame = null;
 let lastFrameTime = null;
 let timeAccumulator = 0;
@@ -236,11 +243,71 @@ function trackSlopeAtDistance(distance) {
     / (highDistance - lowDistance);
 }
 
+function trackTangentAngleAtDistance(distance) {
+  const halfSpan = 0.5;
+  const before = trackPointAtDistance(Math.max(0, distance - halfSpan));
+  const after = trackPointAtDistance(Math.min(trackLength, distance + halfSpan));
+  return Math.atan2(after.height - before.height, after.x - before.x);
+}
+
+function trackCurvatureAtDistance(distance) {
+  const halfSpan = 1.5;
+  const lowDistance = Math.max(0, distance - halfSpan);
+  const highDistance = Math.min(trackLength, distance + halfSpan);
+  if (highDistance <= lowDistance) {
+    return 0;
+  }
+
+  const lowAngle = trackTangentAngleAtDistance(lowDistance);
+  const highAngle = trackTangentAngleAtDistance(highDistance);
+  const angleChange = Math.atan2(Math.sin(highAngle - lowAngle), Math.cos(highAngle - lowAngle));
+  return angleChange / (highDistance - lowDistance);
+}
+
+function riderGForceAt(distance, velocity) {
+  const normalVerticalComponent = Math.cos(trackTangentAngleAtDistance(distance));
+  return normalVerticalComponent + velocity ** 2 * trackCurvatureAtDistance(distance) / gravity;
+}
+
+function exceedsGForceLimits(gForce) {
+  return gForce > gForceLimits.maximum || gForce < gForceLimits.minimum;
+}
+
+function findTrackGForceIssue() {
+  const sampleSpacing = 0.25;
+  const sampleCount = Math.ceil(trackLength / sampleSpacing);
+
+  for (let index = 0; index <= sampleCount; index += 1) {
+    const distance = Math.min(index * sampleSpacing, trackLength);
+    const position = trackPointAtDistance(distance);
+    if (position.height > startingHeight + 0.001) {
+      break;
+    }
+
+    const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - position.height));
+    const gForce = riderGForceAt(distance, idealSpeed);
+    if (exceedsGForceLimits(gForce)) {
+      return { distance, gForce };
+    }
+  }
+
+  return null;
+}
+
+function trackGForceIssueMessage(issue) {
+  const limit = issue.gForce > gForceLimits.maximum ? '+4 g' : '−1 g';
+  const adjustment = issue.gForce > gForceLimits.maximum
+    ? 'Widen the valley or soften the drop.'
+    : 'Widen the crest or reduce the preceding drop.';
+  return `Predicted ${issue.gForce.toFixed(1)} g at ${issue.distance.toFixed(1)} m (${limit} limit). ${adjustment}`;
+}
+
 function updateReadouts() {
   const position = trackPointAtDistance(simulationDistance);
   const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - position.height));
   const idealSpeedMph = idealSpeed * metersPerSecondToMph;
   const speedMph = Math.abs(simulationVelocity) * metersPerSecondToMph;
+  const riderGForce = riderGForceAt(simulationDistance, simulationVelocity);
   const riderMassKg = Number(riderMassInput.value);
   const totalMassKg = cartMassKg + riderMassKg;
   const potentialEnergyKj = totalMassKg * gravity
@@ -248,6 +315,9 @@ function updateReadouts() {
 
   velocityReadouts.forEach(readout => {
     readout.textContent = speedMph.toFixed(1);
+  });
+  gForceReadouts.forEach(readout => {
+    readout.textContent = riderGForce.toFixed(2);
   });
   idealSpeedReadouts.forEach(readout => {
     readout.textContent = idealSpeedMph.toFixed(1);
@@ -287,13 +357,24 @@ function updateRideScene() {
   setCartPosition(cart, position, slope, direction);
   rideCart.dataset.height = position.height.toFixed(5);
   rideCart.dataset.simulationVelocity = simulationVelocity.toFixed(7);
+  rideCart.dataset.gForce = riderGForceAt(simulationDistance, simulationVelocity).toFixed(5);
   const finish = toScreen(controlPoints[controlPoints.length - 1]);
   rideFinishFlag.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
+  rideFailureMarker.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
+  const failureMarkerVisible = simulationState === 'failed';
+  rideFailureMarker.classList.toggle('is-visible', failureMarkerVisible);
+  if (failureMarkerVisible) {
+    const failurePosition = toScreen(position);
+    rideFailureMarker.setAttribute('transform', `translate(${failurePosition.x.toFixed(2)} ${failurePosition.y.toFixed(2)})`);
+  }
 
   if (simulationState === 'running') {
     ridePositionLabel.textContent = `CART POSITION · ${position.x.toFixed(1)} m`;
   } else if (simulationState === 'paused') {
     ridePositionLabel.textContent = `PAUSED · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'failed') {
+    const limit = gForceFailureLimit === gForceLimits.maximum ? '+4.0 g' : '−1.0 g';
+    ridePositionLabel.textContent = `G-FORCE FAILURE · ${limit} · ${position.x.toFixed(1)} m`;
   } else if (simulationState === 'stopped') {
     ridePositionLabel.textContent = `TRACK END · ${position.x.toFixed(1)} m`;
   } else {
@@ -304,6 +385,7 @@ function updateRideScene() {
 function updateRideControls() {
   const isRunning = simulationState === 'running';
   const isPaused = simulationState === 'paused';
+  rideStatus.classList.toggle('is-failed', simulationState === 'failed');
   pauseButton.disabled = !isRunning && !isPaused;
   resetButton.disabled = simulationState === 'idle';
   pauseButton.innerHTML = isPaused ? '▶ <span>Resume</span>' : 'Ⅱ <span>Pause</span>';
@@ -318,6 +400,11 @@ function updateRideControls() {
   } else if (simulationState === 'stopped') {
     rideStatus.textContent = 'AT TRACK END';
     rideControlHint.textContent = 'Track endpoint reached; finish braking is a later stage.';
+  } else if (simulationState === 'failed') {
+    rideStatus.textContent = 'G-FORCE FAILURE';
+    rideControlHint.textContent = gForceFailureLimit === gForceLimits.maximum
+      ? 'Ride stopped after exceeding the +4.0 g limit.'
+      : 'Ride stopped after dropping below the −1.0 g limit.';
   } else {
     rideStatus.textContent = 'READY';
     rideControlHint.textContent = 'Start your ride to begin.';
@@ -360,6 +447,41 @@ function heightLimitCrossing(startDistance, endDistance) {
   return startDistance + (endDistance - startDistance) * ((low + high) / 2);
 }
 
+function gForceLimitCrossing(startDistance, endDistance, startVelocity, endVelocity) {
+  let low = 0;
+  let high = 1;
+
+  for (let iteration = 0; iteration < 24; iteration += 1) {
+    const fraction = (low + high) / 2;
+    const distance = startDistance + (endDistance - startDistance) * fraction;
+    const velocity = startVelocity + (endVelocity - startVelocity) * fraction;
+    if (exceedsGForceLimits(riderGForceAt(distance, velocity))) {
+      high = fraction;
+    } else {
+      low = fraction;
+    }
+  }
+
+  const fraction = (low + high) / 2;
+  return {
+    distance: startDistance + (endDistance - startDistance) * fraction,
+    velocity: startVelocity + (endVelocity - startVelocity) * fraction,
+  };
+}
+
+function stopAtGForceLimit(startDistance, endDistance, startVelocity, endVelocity, violatingGForce) {
+  const crossing = gForceLimitCrossing(startDistance, endDistance, startVelocity, endVelocity);
+  simulationDistance = crossing.distance;
+  simulationVelocity = crossing.velocity;
+  simulationState = 'failed';
+  gForceFailureLimit = violatingGForce > gForceLimits.maximum
+    ? gForceLimits.maximum
+    : gForceLimits.minimum;
+  stopAnimation();
+  updateRideScene();
+  updateRideControls();
+}
+
 function advanceSimulation() {
   const currentSlope = trackSlopeAtDistance(simulationDistance);
   const currentAcceleration = -gravity * currentSlope;
@@ -367,10 +489,25 @@ function advanceSimulation() {
     + 0.5 * currentAcceleration * simulationStep ** 2;
 
   if (nextDistance <= 0 || nextDistance >= trackLength) {
-    simulationDistance = Math.max(0, Math.min(trackLength, nextDistance));
-    const heightAtBoundary = trackPointAtDistance(simulationDistance).height;
+    const previousDistance = simulationDistance;
+    const boundaryDistance = Math.max(0, Math.min(trackLength, nextDistance));
+    const heightAtBoundary = trackPointAtDistance(boundaryDistance).height;
     const boundarySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - heightAtBoundary));
-    simulationVelocity = Math.sign(nextDistance - simulationDistance || simulationVelocity || 1) * boundarySpeed;
+    const boundaryVelocity = Math.sign(nextDistance - boundaryDistance || simulationVelocity || 1) * boundarySpeed;
+    const boundaryGForce = riderGForceAt(boundaryDistance, boundaryVelocity);
+    if (exceedsGForceLimits(boundaryGForce)) {
+      stopAtGForceLimit(
+        previousDistance,
+        boundaryDistance,
+        simulationVelocity,
+        boundaryVelocity,
+        boundaryGForce,
+      );
+      return;
+    }
+
+    simulationDistance = boundaryDistance;
+    simulationVelocity = boundaryVelocity;
     simulationState = 'stopped';
     stopAnimation();
     updateRideScene();
@@ -391,7 +528,20 @@ function advanceSimulation() {
     + 0.5 * (currentAcceleration + nextAcceleration) * simulationStep;
   const direction = Math.sign(nextVelocity || nextDistance - simulationDistance || currentAcceleration || 1);
   const energySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - nextHeight));
-  simulationVelocity = direction * energySpeed;
+  const projectedNextVelocity = direction * energySpeed;
+  const projectedNextGForce = riderGForceAt(nextDistance, projectedNextVelocity);
+  if (exceedsGForceLimits(projectedNextGForce)) {
+    stopAtGForceLimit(
+      simulationDistance,
+      nextDistance,
+      simulationVelocity,
+      projectedNextVelocity,
+      projectedNextGForce,
+    );
+    return;
+  }
+
+  simulationVelocity = projectedNextVelocity;
   simulationDistance = nextDistance;
 }
 
@@ -419,7 +569,7 @@ function animationFrame(timestamp) {
 }
 
 function startRide() {
-  if (!trackIsValid || motionTable.length < 2 || trackLength <= 0) {
+  if (!trackIsValid || !trackIsRideSafe || motionTable.length < 2 || trackLength <= 0) {
     return;
   }
 
@@ -428,6 +578,7 @@ function startRide() {
   simulationVelocity = 0;
   startingHeight = controlPoints[0].height;
   simulationState = 'running';
+  gForceFailureLimit = null;
   lockEditor(true);
   showScreen('ride');
   updateRideScene();
@@ -455,8 +606,9 @@ function resetRide() {
   simulationDistance = 0;
   simulationVelocity = 0;
   simulationState = 'idle';
+  gForceFailureLimit = null;
   lockEditor(false);
-  updateRideScene();
+  renderTrack();
   updateRideControls();
   showScreen('editor');
 }
@@ -474,10 +626,23 @@ function startNewTrack() {
   simulationDistance = 0;
   simulationVelocity = 0;
   simulationState = 'idle';
+  gForceFailureLimit = null;
   lockEditor(false);
   showScreen('editor');
   renderTrack();
   updateRideControls();
+}
+
+function editCurrentTrack() {
+  stopAnimation();
+  simulationDistance = 0;
+  simulationVelocity = 0;
+  simulationState = 'idle';
+  gForceFailureLimit = null;
+  lockEditor(false);
+  renderTrack();
+  updateRideControls();
+  showScreen('editor');
 }
 
 function validateTrack(samples) {
@@ -639,13 +804,16 @@ function drawControlPoints() {
   });
 }
 
-function setValidationMessage(message) {
+function setValidationMessage(message, gForceIssue) {
   trackIsValid = !message;
-  trackCard.classList.toggle('is-invalid', !trackIsValid);
-  trackStatusIcon.classList.toggle('is-invalid', !trackIsValid);
-  trackStatusIcon.textContent = trackIsValid ? '✓' : '!';
-  trackStatus.textContent = message || `Track ready · ${controlPoints.length} control points`;
-  startButton.disabled = !trackIsValid;
+  trackIsRideSafe = !gForceIssue;
+  const hasIssue = !trackIsValid || !trackIsRideSafe;
+  trackCard.classList.toggle('is-invalid', hasIssue);
+  trackStatusIcon.classList.toggle('is-invalid', hasIssue);
+  trackStatusIcon.textContent = hasIssue ? '!' : '✓';
+  trackStatus.textContent = message
+    || (gForceIssue ? trackGForceIssueMessage(gForceIssue) : `Track ready · ${controlPoints.length} control points`);
+  startButton.disabled = hasIssue;
 }
 
 function renderTrack() {
@@ -663,6 +831,7 @@ function renderTrack() {
   if (simulationState === 'idle') {
     startingHeight = controlPoints[0].height;
   }
+  const gForceIssue = message ? null : findTrackGForceIssue();
   trackFill.setAttribute('d', areaPath);
   trackSupport.setAttribute('d', pathData);
   trackRail.setAttribute('d', pathData);
@@ -678,7 +847,7 @@ function renderTrack() {
   finishFlag.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
   selectedPointName.textContent = pointLabel(selectedIndex);
   removePointButton.disabled = controlPoints.length <= 2;
-  setValidationMessage(message);
+  setValidationMessage(message, gForceIssue);
   updateRideScene();
 }
 
@@ -770,6 +939,7 @@ removePointButton.addEventListener('click', removePoint);
 riderMassInput.addEventListener('input', updateReadouts);
 startButton.addEventListener('click', startRide);
 newTrackButton.addEventListener('click', startNewTrack);
+editCurrentTrackButton.addEventListener('click', editCurrentTrack);
 pauseButton.addEventListener('click', toggleRide);
 resetButton.addEventListener('click', resetRide);
 

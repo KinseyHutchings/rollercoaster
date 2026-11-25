@@ -29,7 +29,13 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 - Use a fixed cart mass of 225 kg and let the user set rider mass from 20–200 kg (default 75 kg). Use their sum as the total vehicle mass for potential energy and dynamics.
 - The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for rolling resistance and drag; the total vehicle mass is the fixed cart mass plus the user's rider mass. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
 - Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules. In gravity-only mode, changing rider mass changes potential energy but not speed; normalized G-force in units of \(g\) is also independent of rider mass. The corresponding support/restraint force in newtons does scale with rider mass.
-- Treat the cart and rider as a simplified rigid system that follows the track. Calculate the signed rider G-force as the track-normal support/restraint force divided by the rider's weight. Positive values press the rider into the seat; negative values represent restraint loading. At a horizontal valley with radius \(R\):
+- Treat the cart and rider as a simplified rigid system that follows the track. Calculate the signed rider G-force as the track-normal support/restraint force divided by the rider's weight. Positive values press the rider into the seat; negative values represent restraint loading. For track tangent angle \(\theta\) from horizontal and signed curvature \(\kappa\):
+
+  \[
+  n = \cos(\theta) + \frac{v^2\kappa}{g}
+  \]
+
+  Curvature is positive for a valley (concave up) and negative for a crest (concave down); estimate it from the local change in tangent angle along the sampled track. At a horizontal valley with radius \(R\):
 
   \[
   n = 1 + \frac{v^2}{gR}
@@ -43,6 +49,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 - If the cart cannot reach the next crest, it slows, stops, and rolls back along the track under gravity and the modeled resistance.
 - If G-force exceeds \(+4g\) or falls below \(-1g\), end the run, mark the location, and report a G-force failure. Do not treat this as an energy-related rollback.
+- Before enabling Start, estimate the signed G-force along the reachable ideal run from rest and block tracks predicted to cross either limit. Identify the first predicted violation and suggest widening the valley/crest or reducing the drop that produced it.
 - When the cart crosses the finish line at the last point, apply braking and smoothly bring it to rest. Report the ride as completed once it stops.
 
 ## Outputs
@@ -54,6 +61,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 - Show plots of speed (mph) and G-force (g) against distance along the track. Label both axes and identify the current cart position.
 - Provide an ideal, frictionless speed reference based on conservation of energy.
 - Mark the location of a rollback, G-force failure, or finish crossing on the track, and state the outcome.
+- Provide an Edit current track action on the ride drawing; selecting it stops and resets the current run and returns to the editor without losing the track or rider-mass setting.
 
 ## Look and Feel
 
@@ -75,6 +83,8 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 - Verify that modeled rolling resistance and air drag do not increase the cart's mechanical energy.
 - Verify that the cart rolls back when it cannot reach the next crest.
 - Verify that crossing either G-force limit ends the run and marks the failure location.
+- Verify that the editor blocks tracks predicted to exceed either G-force limit and reports the first unsafe location with a useful track-shaping hint.
+- Verify that Edit current track returns to an unlocked editor while preserving the current track and rider-mass setting.
 - Verify that crossing the finish line starts braking and the cart comes to rest with a completed outcome.
 - Reject tracks with fewer than two distinct points or zero length, and verify that users receive a clear explanation.
 
@@ -103,8 +113,8 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 4. Add G-force calculations and limits
 
-- **Build:** Signed track-normal G-force calculations, live G-force display, and termination with a marked location when either specified G-force limit is crossed. If reporting support/restraint force in newtons, calculate it using the configured rider mass.
-- **Check:** Valley and crest results match the specified equations and normalized G-force is independent of rider mass; support/restraint force in newtons scales with rider mass; ordinary track sections produce stable readings; crossing either limit reports a G-force failure rather than an energy-related rollback.
+- **Build:** Signed track-normal G-force calculations using the local track tangent and curvature, live G-force display, pre-ride safety validation over the reachable ideal trajectory, and termination with a marked location if either limit is crossed during a run. Provide guidance for revising a track that is predicted to be unsafe and an Edit current track action on the ride drawing. If reporting support/restraint force in newtons, calculate it using the configured rider mass.
+- **Check:** Valley and crest results match the specified equations and normalized G-force is independent of rider mass; support/restraint force in newtons scales with rider mass; the starter layout contains multiple hills and valleys and remains within both G-force limits; ordinary track sections produce stable readings; unsafe tracks cannot start and identify the first unsafe location; crossing either limit stops the run, marks the track location, and reports a G-force failure rather than an energy-related rollback; Edit current track preserves the design and unlocks editing.
 
 ### 5. Add resistance and ride outcomes
 

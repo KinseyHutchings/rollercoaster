@@ -103,3 +103,21 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Add a button to start over or create a new track. I chose restoring the built-in starter track and requiring confirmation before replacing the current design.
 - **What you changed:** Added a Start over button that confirms before replacing the current layout, stops any active run, restores the starter track, and preserves rider mass. Updated the Stage 2 build/check details in `spec.md`.
 - **Whether it worked:** Browser checks confirmed canceling preserves the edited track and active run; confirming restores the starter layout, returns to the editor, resets the cart, and unlocks editing. No browser page errors occurred, and `git diff --check` passed.
+
+## 18. Build Stage 4 G-force calculations
+
+- **What I asked:** Build only Stage 4 from the Build stages section of `spec.md`.
+- **What you changed:** Added signed track-normal G-force calculation from track tangent and local curvature, live G-force readouts in both screens, and stop-at-limit handling with a failure marker and explicit +4 g / −1 g status. Updated the stage badge and documented the general force equation and curvature convention in `spec.md`. Resistance, rollback behavior, charts, and narration remain out of scope.
+- **Whether it worked:** Browser checks confirmed both limit paths stop and mark the cart location: the starter track stops at +4.0 g and a custom crest track stops at −1.0 g. The displayed force matched each boundary, failure reasons were correct, G-force was unchanged when rider mass changed, reset cleared the failure state, and there were no browser page errors.
+
+## 19. Keep designed tracks within G-force limits
+
+- **What I asked:** Prevent tracks from exceeding the +4 g/−1 g limits and add an Edit current track action on the ride drawing. I chose pre-ride validation and guidance rather than automatic braking.
+- **What you changed:** Added a pre-run G-force scan over the reachable ideal trajectory that blocks unsafe tracks and reports the first unsafe location with advice to widen the curve or reduce the drop. Adjusted the starter track so it passes the limits. Added Edit current track to stop/reset a run and return to an unlocked editor without losing the design. Updated Stage 4 requirements in `spec.md`.
+- **Whether it worked:** The starter ride reached the endpoint with sampled G-forces between 0.32 g and 3.32 g. Browser checks confirmed the editor blocks tracks predicted above +4 g and below −1 g, offers location-specific guidance, and that Edit current track preserves the track and makes its points editable. Responsive checks at 390px, 768px, and 1280px showed no horizontal overflow; there were no browser errors.
+
+## 20. Reevaluate typical hills and valleys
+
+- **What I asked:** Recheck the G-force calculations and ensure a normal roller-coaster layout with hills and valleys can be drawn.
+- **What you changed:** Replaced the descending-only starter layout with a six-point track containing two clear valleys and two hills. Kept the signed normal-force equation and safety validator, and clarified that broad, smooth curves allow larger hills while meeting the G-force limits.
+- **Whether it worked:** The starter track passed pre-ride safety validation and completed to the endpoint. Sampling every animation frame (694 samples) measured G-forces from −0.13 g to +3.25 g, within the −1 g/+4 g limits. Browser checks reported no page errors.
