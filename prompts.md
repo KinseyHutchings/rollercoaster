@@ -193,3 +193,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Remove the Untitled Ride/Draft badge, Ride Snapshot card, and Spoken updates section.
 - **What you changed:** Removed those sections and their unused styling and narration logic, updated the Stage 7 spec, and made the remaining editor sidebar single-column at tablet widths.
 - **Whether it worked:** Browser checks confirmed all three sections are absent, rides still start and update the live charts, and 500 px and 375 px layouts have no horizontal overflow. No runtime errors occurred.
+
+## 33. Run the app on the web
+
+- **What I asked:** Explain how to run the HTML app on the web.
+- **What you changed:** No app files changed; provided local-preview and GitHub Pages publishing instructions.
+- **Whether it worked:** The steps identify how to preview the app locally and publish this static repository as a website.
