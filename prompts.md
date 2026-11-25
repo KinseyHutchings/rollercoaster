@@ -169,3 +169,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Start slowing the cart before it reaches the finish line.
 - **What you changed:** Changed finish braking to begin when the remaining distance reaches the estimated stopping distance, documented the pre-finish braking behavior in `spec.md`, and clarified the braking hint in the ride controls.
 - **Whether it worked:** Browser validation showed braking started at 97.67 m with 15.69 m remaining and a calculated stopping distance of 15.89 m. Speed decreased through the approach, the cart stopped at the finish and reported ride completion, and no browser errors occurred.
+
+## 29. Push the cart after the lift
+
+- **What I asked:** Give the cart a 2 m/s push after the lift brings it to the first crest.
+- **What you changed:** Set the cart's forward release speed to 2 m/s, included that speed in the frictionless reference and pre-ride G-force calculation, and updated the lift hint and specification.
+- **Whether it worked:** Browser validation confirmed the modified uphill track passed the safety check, the cart released at 1.9997 m/s, and its frictionless speed reference showed 4.5 mph at the crest. It continued forward at 2.016 m/s 0.1 seconds later, with no browser errors.
+
+## 30. Diagnose and increase lift-release speed
+
+- **What I asked:** Explain why the cart stopped on the current track and consider increasing the lift-release push to 3 or 4 m/s.
+- **What you changed:** Corrected the maximum-height limit to include the cart's release kinetic energy, increased the lift-release speed to 3 m/s, and made finish-braking prediction account for the track's slope and resistance. Updated the interface and specification.
+- **Whether it worked:** The current track reproduced the cause: its zero-push height limit removed the cart's release speed at the first crest. With the corrected limit and 3 m/s push, the cart passed the crest, braked at 83.24 m with 39.91 m remaining, then stopped at the 123.16 m finish and reported completion without rollback or page errors. The starter track also completed, braking at 97.20 m of 113.37 m.

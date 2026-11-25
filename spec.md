@@ -16,21 +16,21 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 - A track must contain at least two distinct points and have a nonzero length.
 - The cart is shown as a square with a stick-figure rider. It is placed at the starting point before the ride begins.
 - Selecting **Start** finishes editing and begins the simulation. The user can pause, resume, or reset the ride.
-- If the first point is lower than the next control point, automatically engage a powered lift hill that pulls the cart up to the first crest at 5 m/s, then releases it from rest. Otherwise, start from rest at the first point. An uphill start without a clear crest before the finish is invalid.
+- If the first point is lower than the next control point, automatically engage a powered lift hill that pulls the cart up to the first crest at 5 m/s, then gives it a 3 m/s push. Otherwise, start from rest at the first point. An uphill start without a clear crest before the finish is invalid.
 - The cart is constrained to follow the track.
 
 ## Calculations
 
 - Use meters, seconds, kilograms, and meters per second internally. Use gravitational acceleration \(g = 9.81\ \mathrm{m/s^2}\). World height increases upward; screen coordinates are transformed for display.
-- Calculate speed from the cart's change in mechanical energy. In the ideal, frictionless case, with the cart starting from rest at height \(h_0\), speed at height \(h\) is:
+- Calculate speed from the cart's change in mechanical energy. In the ideal, frictionless case, if the cart has initial speed \(v_0\) at height \(h_0\), its speed at height \(h\) is:
 
   \[
-  v = \sqrt{2g(h_0-h)}
+  v = \sqrt{v_0^2+2g(h_0-h)}
   \]
 
-- During the powered lift, constrain the cart to 5 m/s. The lift supplies external energy; after release, use the crest's release height as \(h_0\) in the ideal gravity equation.
+- During the powered lift, constrain the cart to 5 m/s. At the first crest, release the cart with a 3 m/s forward speed. The lift and release push supply external energy; use \(v_0=3\ \mathrm{m/s}\) and the crest height as \(h_0\) in the ideal equation after release. For a ride without a lift, \(v_0=0\) at the starting point. The maximum ideal height after release is \(h_0+v_0^2/(2g)\).
 - Model rolling resistance as \(a_r = C_{rr}g\cos(\theta)\), with a fixed coefficient \(C_{rr}=0.005\). Model air drag as \(F_d = \frac{1}{2}\rho C_dA v^2\), using fixed air density \(\rho=1.225\ \mathrm{kg/m^3}\) and drag area \(C_dA=0.8\ \mathrm{m^2}\); use total vehicle mass to calculate drag acceleration.
-- Begin braking when the remaining track distance is within the estimated stopping distance \(v^2/(2a_b)\), using a net braking deceleration of at least \(a_b=4\ \mathrm{m/s^2}\). Continue braking after finish crossing if needed, and report completion when the cart reaches rest.
+- Estimate stopping distance by projecting forward with local gravity, rolling resistance, air drag, and braking at a net deceleration of at least \(4\ \mathrm{m/s^2}\). Begin braking when the projected stop point would reach or pass the finish; continue braking at the finish until the cart reaches rest.
 - Use a fixed cart mass of 225 kg and let the user set rider mass from 20–200 kg (default 75 kg). Use their sum as the total vehicle mass for potential energy and dynamics.
 - The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for rolling resistance and drag; the total vehicle mass is the fixed cart mass plus the user's rider mass. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
 - Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules. In gravity-only mode, changing rider mass changes potential energy but not speed; normalized G-force in units of \(g\) is also independent of rider mass. The corresponding support/restraint force in newtons does scale with rider mass.
@@ -55,8 +55,8 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 - Enforce the same +4 g and −1 g limits during both powered-lift and gravity-driven motion.
 - If the cart cannot reach the next crest, it slows, stops, and rolls back along the track under gravity and the modeled resistance.
 - If G-force exceeds \(+4g\) or falls below \(-1g\), end the run, mark the location, and report a G-force failure. Do not treat this as an energy-related rollback.
-- Before enabling Start, estimate the signed G-force along the reachable ideal run from rest and block tracks predicted to cross either limit. Identify the first predicted violation and suggest widening the valley/crest or reducing the drop that produced it.
-- When the cart crosses the finish line at the last point, apply braking and smoothly bring it to rest. Report the ride as completed once it stops.
+- Before enabling Start, estimate the signed G-force along the reachable ideal run, including lift speed and release push, and block tracks predicted to cross either limit. Identify the first predicted violation and suggest widening the valley/crest or reducing the drop that produced it.
+- Begin terrain-aware braking before the finish, then bring the cart to rest at the finish line. Report the ride as completed once it stops.
 
 ## Outputs
 
@@ -88,10 +88,10 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 - Verify that the cart rolls back when it cannot reach the next crest.
 - Verify that crossing either G-force limit ends the run and marks the failure location.
 - Verify that the editor blocks tracks predicted to exceed either G-force limit and reports the first unsafe location with a useful track-shaping hint.
-- Verify that an uphill start uses a 5 m/s lift to the first crest, releases from rest, and then follows the ideal energy equation relative to the release height.
+- Verify that an uphill start uses a 5 m/s lift to the first crest, releases with a 3 m/s forward speed, and then follows the ideal energy equation relative to the release height and speed, allowing the cart to rise slightly above the crest if its kinetic energy permits; a ride without a lift starts from rest.
 - Verify that neither endpoint can be removed, while interior points remain removable.
 - Verify that Edit current track returns to an unlocked editor while preserving the current track and rider-mass setting.
-- Verify that crossing the finish line starts braking and the cart comes to rest with a completed outcome.
+- Verify that terrain-aware braking begins before the finish and the cart comes to rest at the line with a completed outcome, including on an uphill final approach.
 - Reject tracks with fewer than two distinct points or zero length, and verify that users receive a clear explanation.
 
 ## Out of Scope
@@ -125,12 +125,12 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 
 ### 5. Add the powered lift hill
 
-- **Build:** When the start point is below the next point, automatically use a powered lift hill to pull the cart to the first crest at 5 m/s, then release it from rest. Tracks without an uphill start begin from rest at the start point.
-- **Check:** The lift stops at the first crest and releases the cart from rest; after release, speed follows the ideal energy equation relative to the release height; an uphill start without a clear crest is rejected.
+- **Build:** When the start point is below the next point, automatically use a powered lift hill to pull the cart to the first crest at 5 m/s, then give it a 3 m/s forward push. Tracks without an uphill start begin from rest at the start point.
+- **Check:** The lift ends at the first crest and releases the cart at 3 m/s; the cart may rise above the release height using its initial kinetic energy; after release, speed follows the ideal energy equation relative to the release height and speed; an uphill start without a clear crest is rejected.
 
 ### 6. Add resistance and ride outcomes
 
-- **Build:** Rolling resistance (\(C_{rr}=0.005\)) and air drag (\(\rho=1.225\ \mathrm{kg/m^3}\), \(C_dA=0.8\ \mathrm{m^2}\)) using the configured total vehicle mass, energy-loss behavior, rollback when the cart cannot reach a crest, and braking that begins within the estimated stopping distance of the finish with at least \(4\ \mathrm{m/s^2}\) net deceleration.
+- **Build:** Rolling resistance (\(C_{rr}=0.005\)) and air drag (\(\rho=1.225\ \mathrm{kg/m^3}\), \(C_dA=0.8\ \mathrm{m^2}\)) using the configured total vehicle mass, energy-loss behavior, rollback when the cart cannot reach a crest, and terrain-aware braking that begins when projected stopping distance reaches the finish with at least \(4\ \mathrm{m/s^2}\) net deceleration.
 - **Check:** Resistance never adds mechanical energy; a cart unable to reach a crest stops and rolls back with its location marked; the cart begins slowing before the finish, then brakes to rest and reports completion.
 
 ### 7. Complete ride feedback and validation
