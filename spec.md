@@ -1,5 +1,9 @@
 # Roller Coaster Designer
 
+## Overview
+
+The app lets users shape a 2D roller-coaster track by editing control points, then run a cart from rest at the first hill. It displays the cart's speed and signed G-force, compares speed with an ideal frictionless calculation, and shows the ride's progress on graphs. The simulation includes rolling resistance and air drag, can roll back if the cart cannot reach a crest, stops on G-force-limit violations, and brakes the cart after it crosses the finish line.
+
 ## Purpose
 
 Let a user design a 2D roller-coaster track, simulate a cart starting from rest at the first hill, and observe the cart's speed and the rider's g-force throughout the ride.
@@ -74,3 +78,35 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 - Loops and three-dimensional tracks.
 - Wind and environmental effects.
 - Detailed structural engineering, restraint design, or biomechanical modeling of riders.
+
+## Build stages
+
+### 1. Mock up the page layout
+
+- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders, and graph placeholders.
+- **Check:** Editing and ride controls are easy to find, and the track and measurements have enough room to remain readable. Do not depend on working physics in this stage.
+
+### 2. Build the track model and editor
+
+- **Build:** World-to-screen coordinate mapping, a smooth curve representation, track rendering, point selection and dragging, adding and removing points, and basic track validation. Choose and document an interpolation method that produces usable track geometry for later motion and curvature calculations.
+- **Check:** Points remain anchored while edited; the curve updates predictably; invalid, zero-length, or looped tracks are rejected with a clear explanation; the start and finish are identifiable.
+
+### 3. Add ideal motion
+
+- **Build:** Start-at-rest behavior, cart movement constrained to the track, pause/resume/reset controls, ideal frictionless speed, and the energy-conservation reference.
+- **Check:** At points below the starting height, speeds match the specified equation; the cart remains on the track and responds correctly to pause, resume, and reset.
+
+### 4. Add G-force calculations and limits
+
+- **Build:** Signed track-normal G-force calculations, live G-force display, and termination with a marked location when either specified G-force limit is crossed.
+- **Check:** Valley and crest results match the specified equations; ordinary track sections produce stable readings; crossing either limit reports a G-force failure rather than an energy-related rollback.
+
+### 5. Add resistance and ride outcomes
+
+- **Build:** Rolling resistance and air drag using documented fixed parameter values, energy-loss behavior, rollback when the cart cannot reach a crest, and braking after the finish line.
+- **Check:** Resistance never adds mechanical energy; a cart unable to reach a crest stops and rolls back; a cart crossing the finish line brakes to a stop and reports completion.
+
+### 6. Complete ride feedback and validation
+
+- **Build:** Speed readout in mph, optional spoken readouts, labeled speed and G-force plots with a current-position indicator, outcome markers, and final visual polish.
+- **Check:** Plotted values and units match the live readouts; narration can be enabled and disabled; rollback, failure, and completion locations are clear; all validation cases in this spec pass.

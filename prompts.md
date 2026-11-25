@@ -37,3 +37,21 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Create `AGENTS.md` instructions for maintaining a prompt log in `prompts.md`, including earlier and future requests with what was asked, what changed, and whether it worked.
 - **What you changed:** Created `AGENTS.md` with logging instructions and this `prompts.md` with the requests available in this conversation.
 - **Whether it worked:** Yes. Both files were created; future requests should be logged after they are handled.
+
+## 7. Add overview and build stages to the spec
+
+- **What I asked:** Add the app overview to the top of `spec.md` and the five build stages at the end under a Build stages heading.
+- **What you changed:** Added an Overview section and a Build stages section to `spec.md`.
+- **Whether it worked:** Yes. Both sections were added while preserving the existing specification.
+
+## 8. Review build-stage feasibility
+
+- **What I asked:** Review the Build stages and assess the feasibility of the planned app.
+- **What you changed:** No app or specification changes; provided a feasibility review and implementation risks.
+- **Whether it worked:** Yes. The stages were assessed against the app's scope and physics requirements.
+
+## 9. Revise stages for feasibility
+
+- **What I asked:** Make necessary changes after reviewing the feasibility of the planned app stages.
+- **What you changed:** Reworked the Build stages in `spec.md` into six incremental steps, separating track geometry, ideal motion, G-force behavior, resistance and ride outcomes, and final feedback.
+- **Whether it worked:** Yes. The revised sequence isolates the higher-risk geometry and physics work and gives each stage concrete checks.
