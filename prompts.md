@@ -121,3 +121,21 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Recheck the G-force calculations and ensure a normal roller-coaster layout with hills and valleys can be drawn.
 - **What you changed:** Replaced the descending-only starter layout with a six-point track containing two clear valleys and two hills. Kept the signed normal-force equation and safety validator, and clarified that broad, smooth curves allow larger hills while meeting the G-force limits.
 - **Whether it worked:** The starter track passed pre-ride safety validation and completed to the endpoint. Sampling every animation frame (694 samples) measured G-forces from −0.13 g to +3.25 g, within the −1 g/+4 g limits. Browser checks reported no page errors.
+
+## 21. Specify only a lift hill
+
+- **What I asked:** Adjust `spec.md` to include only a lift hill that pulls the car to the top of a hill.
+- **What you changed:** Updated the specification to describe the automatic 2 m/s lift to the first crest and release from rest. Removed loop and thrill-score requirements and marked them out of scope; no application code was changed.
+- **Whether it worked:** Yes. The specification now covers the lift hill without loops or thrill scoring, and `git diff --check` passes.
+
+## 22. Remove loop capability
+
+- **What I asked:** Remove loop capability and keep the track editor based on its control points on the line.
+- **What you changed:** Removed loop creation and its radius control, restored left-to-right control-point ordering, and removed the paired thrill-score display and calculations to match the lift-only specification.
+- **Whether it worked:** The code and UI changes are complete; browser checks are pending.
+
+## 23. Increase lift-hill speed
+
+- **What I asked:** Adjust the lift-hill speed to 5 m/s.
+- **What you changed:** Set the simulated lift speed to 5 m/s and updated the interface and specification to match.
+- **Whether it worked:** The source and specification now consistently use 5 m/s; `git diff --check` passes and no stale 2 m/s references remain. Browser validation was not run.

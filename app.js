@@ -48,8 +48,8 @@ const world = {
   maxHeight: 45,
   screenMinX: 56,
   screenMaxX: 944,
-  screenBaseY: 350,
-  pixelsPerMeter: 5.4,
+  screenBaseY: 400,
+  pixelsPerMeter: 8.4,
   fillBaseY: 420,
 };
 
@@ -67,6 +67,7 @@ const gravity = 9.81;
 const cartMassKg = 225;
 const metersPerSecondToMph = 2.2369362921;
 const simulationStep = 1 / 120;
+const liftSpeed = 5;
 const gForceLimits = { maximum: 4, minimum: -1 };
 
 let selectedIndex = 0;
@@ -84,6 +85,8 @@ let gForceFailureLimit = null;
 let simulationFrame = null;
 let lastFrameTime = null;
 let timeAccumulator = 0;
+let liftConfiguration = null;
+let liftActive = false;
 
 function showScreen(name) {
   for (const [screenName, screen] of Object.entries(screens)) {
@@ -264,6 +267,28 @@ function trackCurvatureAtDistance(distance) {
   return angleChange / (highDistance - lowDistance);
 }
 
+function findLiftConfiguration() {
+  if (controlPoints.length < 2 || controlPoints[1].height <= controlPoints[0].height) {
+    return null;
+  }
+
+  let wasAscending = false;
+  const sampleSpacing = 0.05;
+  for (let distance = sampleSpacing; distance < trackLength; distance += sampleSpacing) {
+    const slope = trackSlopeAtDistance(distance);
+    if (slope > 0.005) {
+      wasAscending = true;
+    } else if (wasAscending && slope < -0.005) {
+      return {
+        distance: Math.min(distance + 0.05, trackLength),
+        releaseHeight: trackPointAtDistance(Math.min(distance + 0.05, trackLength)).height,
+      };
+    }
+  }
+
+  return { distance: null, releaseHeight: null };
+}
+
 function riderGForceAt(distance, velocity) {
   const normalVerticalComponent = Math.cos(trackTangentAngleAtDistance(distance));
   return normalVerticalComponent + velocity ** 2 * trackCurvatureAtDistance(distance) / gravity;
@@ -273,25 +298,41 @@ function exceedsGForceLimits(gForce) {
   return gForce > gForceLimits.maximum || gForce < gForceLimits.minimum;
 }
 
-function findTrackGForceIssue() {
-  const sampleSpacing = 0.25;
-  const sampleCount = Math.ceil(trackLength / sampleSpacing);
+function previewRide() {
+  const sampleSpacing = 0.05;
+  const liftEndDistance = liftConfiguration?.distance ?? 0;
 
-  for (let index = 0; index <= sampleCount; index += 1) {
-    const distance = Math.min(index * sampleSpacing, trackLength);
-    const position = trackPointAtDistance(distance);
-    if (position.height > startingHeight + 0.001) {
-      break;
-    }
+  if (liftConfiguration && liftConfiguration.distance === null) {
+    return {
+      issue: null,
+      message: 'A lift hill must reach a clear crest before the finish.',
+    };
+  }
 
-    const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - position.height));
-    const gForce = riderGForceAt(distance, idealSpeed);
-    if (exceedsGForceLimits(gForce)) {
-      return { distance, gForce };
+  if (liftConfiguration) {
+    for (let distance = 0; distance <= liftEndDistance; distance += sampleSpacing) {
+      const gForce = riderGForceAt(distance, liftSpeed);
+      if (exceedsGForceLimits(gForce)) {
+        return { issue: { distance, gForce } };
+      }
     }
   }
 
-  return null;
+  const energyStartHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
+  for (let distance = liftEndDistance + sampleSpacing; distance <= trackLength; distance += sampleSpacing) {
+    const position = trackPointAtDistance(distance);
+    if (position.height > energyStartHeight + 0.001) {
+      break;
+    }
+
+    const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, energyStartHeight - position.height));
+    const gForce = riderGForceAt(distance, idealSpeed);
+    if (exceedsGForceLimits(gForce)) {
+      return { issue: { distance, gForce } };
+    }
+  }
+
+  return { issue: null };
 }
 
 function trackGForceIssueMessage(issue) {
@@ -320,7 +361,7 @@ function updateReadouts() {
     readout.textContent = riderGForce.toFixed(2);
   });
   idealSpeedReadouts.forEach(readout => {
-    readout.textContent = idealSpeedMph.toFixed(1);
+    readout.textContent = liftActive ? '—' : idealSpeedMph.toFixed(1);
   });
   potentialEnergyReadouts.forEach(readout => {
     readout.textContent = potentialEnergyKj.toFixed(1);
@@ -332,29 +373,29 @@ function updateReadouts() {
   totalMassReadouts.forEach(readout => {
     readout.textContent = totalMassKg.toFixed(0);
   });
-
   return position;
 }
 
-function setCartPosition(element, position, slope, direction = 1) {
+function setCartPosition(element, position, tangentAngle, direction = 1) {
   const screenPosition = toScreen(position);
   const pixelsPerMeterX = (world.screenMaxX - world.screenMinX) / (world.maxX - world.minX);
-  let angle = Math.atan2(-slope * world.pixelsPerMeter, pixelsPerMeterX) * 180 / Math.PI;
-  if (direction < 0) {
-    angle += 180;
-  }
+  const angle = Math.atan2(
+    -Math.sin(tangentAngle) * world.pixelsPerMeter,
+    Math.cos(tangentAngle) * pixelsPerMeterX,
+  ) * 180 / Math.PI;
+  const orientedAngle = angle + (direction < 0 ? 180 : 0);
   element.setAttribute(
     'transform',
-    `translate(${screenPosition.x.toFixed(2)} ${screenPosition.y.toFixed(2)}) rotate(${angle.toFixed(2)}) translate(-24 -42)`,
+    `translate(${screenPosition.x.toFixed(2)} ${screenPosition.y.toFixed(2)}) rotate(${orientedAngle.toFixed(2)}) translate(-24 -42)`,
   );
 }
 
 function updateRideScene() {
   const position = updateReadouts();
-  const slope = trackSlopeAtDistance(simulationDistance);
+  const tangentAngle = trackTangentAngleAtDistance(simulationDistance);
   const direction = simulationVelocity < 0 ? -1 : 1;
-  setCartPosition(rideCart, position, slope, direction);
-  setCartPosition(cart, position, slope, direction);
+  setCartPosition(rideCart, position, tangentAngle, direction);
+  setCartPosition(cart, position, tangentAngle, direction);
   rideCart.dataset.height = position.height.toFixed(5);
   rideCart.dataset.simulationVelocity = simulationVelocity.toFixed(7);
   rideCart.dataset.gForce = riderGForceAt(simulationDistance, simulationVelocity).toFixed(5);
@@ -368,7 +409,9 @@ function updateRideScene() {
     rideFailureMarker.setAttribute('transform', `translate(${failurePosition.x.toFixed(2)} ${failurePosition.y.toFixed(2)})`);
   }
 
-  if (simulationState === 'running') {
+  if (simulationState === 'running' && liftActive) {
+    ridePositionLabel.textContent = `LIFT HILL · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'running') {
     ridePositionLabel.textContent = `CART POSITION · ${position.x.toFixed(1)} m`;
   } else if (simulationState === 'paused') {
     ridePositionLabel.textContent = `PAUSED · ${position.x.toFixed(1)} m`;
@@ -392,8 +435,10 @@ function updateRideControls() {
   pauseButton.setAttribute('aria-label', isPaused ? 'Resume ride' : 'Pause ride');
 
   if (isRunning) {
-    rideStatus.textContent = 'RUNNING · IDEAL MODE';
-    rideControlHint.textContent = 'Gravity only · no friction or air drag.';
+    rideStatus.textContent = liftActive ? 'LIFT HILL' : 'RUNNING · IDEAL MODE';
+    rideControlHint.textContent = liftActive
+      ? 'Powered lift at 5 m/s · release at first crest.'
+      : 'Gravity only after lift release · no friction or air drag.';
   } else if (isPaused) {
     rideStatus.textContent = 'PAUSED';
     rideControlHint.textContent = 'Ride paused.';
@@ -422,7 +467,8 @@ function stopAnimation() {
 
 function lockEditor(locked) {
   addPointButton.disabled = locked;
-  removePointButton.disabled = locked || controlPoints.length <= 2;
+  removePointButton.disabled = locked || controlPoints.length <= 2
+    || selectedIndex === 0 || selectedIndex === controlPoints.length - 1;
   riderMassInput.disabled = locked;
   controlGroup.querySelectorAll('.control-handle').forEach(handle => {
     handle.setAttribute('aria-disabled', String(locked));
@@ -483,6 +529,24 @@ function stopAtGForceLimit(startDistance, endDistance, startVelocity, endVelocit
 }
 
 function advanceSimulation() {
+  if (liftActive) {
+    const nextDistance = Math.min(trackLength, simulationDistance + liftSpeed * simulationStep);
+    const currentGForce = riderGForceAt(simulationDistance, liftSpeed);
+    const nextGForce = riderGForceAt(nextDistance, liftSpeed);
+    if (exceedsGForceLimits(nextGForce)) {
+      stopAtGForceLimit(simulationDistance, nextDistance, liftSpeed, liftSpeed, nextGForce);
+      return;
+    }
+    simulationDistance = nextDistance;
+    simulationVelocity = liftSpeed;
+    if (simulationDistance >= liftConfiguration.distance) {
+      simulationDistance = liftConfiguration.distance;
+      simulationVelocity = 0;
+      liftActive = false;
+    }
+    return;
+  }
+
   const currentSlope = trackSlopeAtDistance(simulationDistance);
   const currentAcceleration = -gravity * currentSlope;
   const nextDistance = simulationDistance + simulationVelocity * simulationStep
@@ -575,8 +639,9 @@ function startRide() {
 
   stopAnimation();
   simulationDistance = 0;
-  simulationVelocity = 0;
-  startingHeight = controlPoints[0].height;
+  liftActive = Boolean(liftConfiguration);
+  simulationVelocity = liftActive ? liftSpeed : 0;
+  startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   simulationState = 'running';
   gForceFailureLimit = null;
   lockEditor(true);
@@ -605,6 +670,7 @@ function resetRide() {
   stopAnimation();
   simulationDistance = 0;
   simulationVelocity = 0;
+  liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   lockEditor(false);
@@ -625,6 +691,7 @@ function startNewTrack() {
   draggingPointerId = null;
   simulationDistance = 0;
   simulationVelocity = 0;
+  liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   lockEditor(false);
@@ -637,6 +704,7 @@ function editCurrentTrack() {
   stopAnimation();
   simulationDistance = 0;
   simulationVelocity = 0;
+  liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   lockEditor(false);
@@ -650,8 +718,8 @@ function validateTrack(samples) {
     return 'Add at least two control points.';
   }
 
-  if (controlPoints[0].height <= controlPoints[1].height) {
-    return 'The starting crest must be higher than the next control point.';
+  if (liftConfiguration && liftConfiguration.distance === null) {
+    return 'A lift hill must reach a clear crest before the finish.';
   }
 
   for (let first = 0; first < controlPoints.length; first += 1) {
@@ -666,6 +734,9 @@ function validateTrack(samples) {
     if (controlPoints[index].x <= controlPoints[index - 1].x) {
       return 'Keep control points ordered from start to finish.';
     }
+    if (controlPoints[index].x < world.minX || controlPoints[index].x > world.maxX) {
+      return 'Keep control points inside the horizontal design area.';
+    }
   }
 
   if (samples.length < 2) {
@@ -674,11 +745,7 @@ function validateTrack(samples) {
 
   let length = 0;
   for (let index = 1; index < samples.length; index += 1) {
-    const deltaX = samples[index].x - samples[index - 1].x;
     length += pointDistance(samples[index], samples[index - 1]);
-    if (deltaX < -0.02) {
-      return 'The track loops back horizontally; move points to remove the loop.';
-    }
     if (samples[index].height < world.minHeight - 0.02 || samples[index].height > world.maxHeight + 0.02) {
       return 'The curve leaves the design area; move points inward.';
     }
@@ -828,10 +895,11 @@ function renderTrack() {
   motionTable = arcLengthData.table;
   trackLength = arcLengthData.length;
   lowestTrackHeight = Math.min(...motionSamples.map(point => point.height));
+  liftConfiguration = findLiftConfiguration();
   if (simulationState === 'idle') {
-    startingHeight = controlPoints[0].height;
+    startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   }
-  const gForceIssue = message ? null : findTrackGForceIssue();
+  const preview = message ? { issue: null } : previewRide();
   trackFill.setAttribute('d', areaPath);
   trackSupport.setAttribute('d', pathData);
   trackRail.setAttribute('d', pathData);
@@ -842,12 +910,13 @@ function renderTrack() {
   drawControlPoints();
 
   const finish = toScreen(controlPoints[controlPoints.length - 1]);
-  const startSlope = trackSlopeAtDistance(0);
-  setCartPosition(cart, controlPoints[0], startSlope);
+  const startTangent = trackTangentAngleAtDistance(0);
+  setCartPosition(cart, controlPoints[0], startTangent);
   finishFlag.setAttribute('transform', `translate(${finish.x.toFixed(2)} ${finish.y.toFixed(2)})`);
   selectedPointName.textContent = pointLabel(selectedIndex);
-  removePointButton.disabled = controlPoints.length <= 2;
-  setValidationMessage(message, gForceIssue);
+  removePointButton.disabled = controlPoints.length <= 2
+    || selectedIndex === 0 || selectedIndex === controlPoints.length - 1;
+  setValidationMessage(message || preview.message, preview.issue);
   updateRideScene();
 }
 
@@ -868,9 +937,10 @@ function updatePoint(index, point) {
   current.height = Math.max(world.minHeight, Math.min(world.maxHeight, point.height));
 
   if (index > 0 && index < controlPoints.length - 1) {
-    const minX = controlPoints[index - 1].x + 1;
-    const maxX = controlPoints[index + 1].x - 1;
-    current.x = Math.max(minX, Math.min(maxX, point.x));
+    current.x = Math.max(
+      controlPoints[index - 1].x + 1,
+      Math.min(controlPoints[index + 1].x - 1, point.x),
+    );
   }
 }
 
@@ -881,7 +951,7 @@ function addPoint() {
   const left = controlPoints[insertionIndex - 1];
   const right = controlPoints[insertionIndex];
 
-  if (right.x - left.x < 2) {
+  if (pointDistance(left, right) < 2) {
     trackStatus.textContent = 'Move neighboring points apart before adding another point.';
     return;
   }
@@ -895,21 +965,11 @@ function addPoint() {
 }
 
 function removePoint() {
-  if (controlPoints.length <= 2) {
+  if (controlPoints.length <= 2 || selectedIndex === 0 || selectedIndex === controlPoints.length - 1) {
     return;
   }
 
-  const removedEndpoint = selectedIndex === 0 || selectedIndex === controlPoints.length - 1;
   controlPoints.splice(selectedIndex, 1);
-  if (removedEndpoint) {
-    const firstX = controlPoints[0].x;
-    const trackWidth = controlPoints[controlPoints.length - 1].x - firstX;
-    controlPoints.forEach(point => {
-      point.x = (point.x - firstX) / trackWidth * world.maxX;
-    });
-    controlPoints[0].x = world.minX;
-    controlPoints[controlPoints.length - 1].x = world.maxX;
-  }
   selectedIndex = Math.min(selectedIndex, controlPoints.length - 1);
   renderTrack();
 }
