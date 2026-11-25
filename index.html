@@ -54,6 +54,28 @@
                 <span class="canvas-hint">Drag points to shape your ride</span>
                 <button class="icon-button" type="button" aria-label="Canvas options" disabled>···</button>
               </div>
+              <section class="metrics-grid editor-metrics" aria-label="Current ride measurement placeholders">
+                <article class="metric-card speed-card">
+                  <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>VELOCITY</span></div>
+                  <div class="metric-value">— <span>mph</span></div>
+                  <p class="metric-caption">Along the track</p>
+                </article>
+                <article class="metric-card force-card">
+                  <div class="metric-heading"><span class="metric-icon force-icon" aria-hidden="true">✳</span><span>RIDER G-FORCE</span></div>
+                  <div class="metric-value">— <span>g</span></div>
+                  <p class="metric-caption">Vertical load</p>
+                </article>
+                <article class="metric-card energy-card">
+                  <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
+                  <div class="metric-value">— <span>kJ</span></div>
+                  <p class="metric-caption">Cart + rider · above track low point</p>
+                </article>
+                <article class="metric-card ideal-card">
+                  <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>
+                  <div class="metric-value">— <span>mph</span></div>
+                  <p class="metric-caption">Frictionless reference</p>
+                </article>
+              </section>
               <div class="track-canvas">
                 <div class="canvas-axis axis-x"><span>START</span><span>FINISH</span></div>
                 <svg class="track-art" viewBox="0 0 1000 470" role="img" aria-labelledby="track-title track-desc">

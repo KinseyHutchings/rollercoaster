@@ -238,6 +238,12 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .ride-title-row { margin-bottom: 17px; }
 .back-button { min-height: 35px; }
 .metrics-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.editor-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; padding: 10px 12px; border-bottom: 1px solid #edf0ec; background: #fbfcf9; }
+.editor-metrics .metric-card { min-height: 94px; padding: 8px 9px 7px; }
+.editor-metrics .metric-heading { gap: 5px; font-size: 7px; line-height: 1.25; letter-spacing: .07em; }
+.editor-metrics .metric-icon { flex: 0 0 21px; width: 21px; height: 21px; font-size: 12px; }
+.editor-metrics .metric-value { margin: 6px 0 2px; font-size: 22px; }
+.editor-metrics .metric-caption { font-size: 7px; }
 .metric-card { min-height: 112px; padding: 12px 13px 10px; }
 .metric-heading { display: flex; align-items: center; gap: 8px; color: #819087; font-size: 8px; font-weight: 700; letter-spacing: .1em; }
 .metric-icon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 8px; font-size: 14px; }
@@ -299,6 +305,7 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 @media (max-width: 980px) {
   .app-shell { padding: 0 28px; }
   .editor-grid { grid-template-columns: minmax(0, 1fr) 250px; }
+  .editor-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .track-canvas { min-height: 340px; }
   .ride-grid { grid-template-columns: minmax(0, 1fr) minmax(280px, .85fr); }
   .ride-canvas { min-height: 310px; }
@@ -315,6 +322,7 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
   .view-tab { flex: 1; justify-content: center; }
   .editor-grid { grid-template-columns: 1fr; }
   .editor-sidebar { grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .editor-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ride-grid { grid-template-columns: 1fr; }
   .track-canvas { min-height: 320px; }
   .canvas-legend { right: 9px; bottom: 8px; gap: 8px; padding: 6px; font-size: 7px; }

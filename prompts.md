@@ -67,3 +67,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Adjust the design so velocity, G-force, and total potential energy appear on the same screen as the drawn roller coaster.
 - **What you changed:** Reworked the ride view into a track-and-dashboard layout with placeholders for velocity, rider G-force, total potential energy, and ideal speed. Updated `spec.md` to define potential energy relative to the track's lowest point and include it in outputs and validation.
 - **Whether it worked:** Yes. Browser checks confirmed that the track and all measurement cards are present together at 390px, 768px, and 1280px widths, with no horizontal overflow.
+
+## 12. Show measurements in the track editor
+
+- **What I asked:** Show velocity, G-force, total potential energy, and ideal speed on the Track editor screen alongside the editable track.
+- **What you changed:** Added a four-metric placeholder strip to the editor track card and updated the Stage 1 check in `spec.md` to require all four measurements alongside the track in both screens.
+- **Whether it worked:** Yes. Browser checks confirmed all four labels are visible in the editor at 390px, 768px, and 1280px widths, with no horizontal overflow.

@@ -85,8 +85,8 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 1. Mock up the page layout
 
-- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders for speed, G-force, and potential energy, and graph placeholders.
-- **Check:** Editing and ride controls are easy to find, and the coaster drawing and all three ride measurements are visible together and remain readable. Do not depend on working physics in this stage.
+- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders for velocity, G-force, potential energy, and ideal speed, and graph placeholders.
+- **Check:** Editing and ride controls are easy to find, and the coaster drawing and all four ride measurements are visible together and remain readable on both screens. Do not depend on working physics in this stage.
 
 ### 2. Build the track model and editor
 
