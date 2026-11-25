@@ -139,3 +139,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Adjust the lift-hill speed to 5 m/s.
 - **What you changed:** Set the simulated lift speed to 5 m/s and updated the interface and specification to match.
 - **Whether it worked:** The source and specification now consistently use 5 m/s; `git diff --check` passes and no stale 2 m/s references remain. Browser validation was not run.
+
+## 24. Build Stage 5 powered lift hill
+
+- **What I asked:** Build only Stage 5 from the Build stages section of `spec.md`.
+- **What you changed:** Refined lift-crest detection, kept the cart moving forward after a zero-speed crest release, and updated the ride status and hint when the lift ends.
+- **Whether it worked:** Browser validation confirmed a 5 m/s lift, zero-speed release at the first crest, forward gravity-driven motion matching the ideal energy equation, and rejection of an uphill track without a crest. The non-uphill starter track began at rest; no page errors occurred.
+
+## 25. Complete Stage 5 runtime validation
+
+- **What I asked:** Complete the runtime/browser validation for the Stage 5 powered lift.
+- **What you changed:** Fixed the stale lift-status display after crest release and added a small forward branch selection at the stationary crest so the cart proceeds downhill while preserving the energy-based speed.
+- **Whether it worked:** Browser checks passed: the lift read 5 m/s, released at 0 m/s at about 37 m, then moved forward at 0.18384 m/s versus 0.18393 m/s ideal after one second. A monotonic uphill track was rejected with a clear-crest message and Start disabled. Reload returned to a valid starter track with no page errors; `git diff --check` passed.

@@ -68,6 +68,7 @@ const cartMassKg = 225;
 const metersPerSecondToMph = 2.2369362921;
 const simulationStep = 1 / 120;
 const liftSpeed = 5;
+const liftReleaseNudgeDistance = 0.05;
 const gForceLimits = { maximum: 4, minimum: -1 };
 
 let selectedIndex = 0;
@@ -80,6 +81,7 @@ let lowestTrackHeight = 0;
 let startingHeight = 0;
 let simulationDistance = 0;
 let simulationVelocity = 0;
+let liftJustReleased = false;
 let simulationState = 'idle';
 let gForceFailureLimit = null;
 let simulationFrame = null;
@@ -272,16 +274,28 @@ function findLiftConfiguration() {
     return null;
   }
 
-  let wasAscending = false;
+  let ascendingDistance = null;
   const sampleSpacing = 0.05;
   for (let distance = sampleSpacing; distance < trackLength; distance += sampleSpacing) {
     const slope = trackSlopeAtDistance(distance);
     if (slope > 0.005) {
-      wasAscending = true;
-    } else if (wasAscending && slope < -0.005) {
+      ascendingDistance = distance;
+    } else if (ascendingDistance !== null && slope < -0.005) {
+      let lowDistance = ascendingDistance;
+      let highDistance = distance;
+      for (let iteration = 0; iteration < 20; iteration += 1) {
+        const midpoint = (lowDistance + highDistance) / 2;
+        if (trackSlopeAtDistance(midpoint) > 0) {
+          lowDistance = midpoint;
+        } else {
+          highDistance = midpoint;
+        }
+      }
+
+      const crestDistance = (lowDistance + highDistance) / 2;
       return {
-        distance: Math.min(distance + 0.05, trackLength),
-        releaseHeight: trackPointAtDistance(Math.min(distance + 0.05, trackLength)).height,
+        distance: crestDistance,
+        releaseHeight: trackPointAtDistance(crestDistance).height,
       };
     }
   }
@@ -543,14 +557,26 @@ function advanceSimulation() {
       simulationDistance = liftConfiguration.distance;
       simulationVelocity = 0;
       liftActive = false;
+      liftJustReleased = true;
+      updateRideControls();
     }
     return;
   }
 
+  let releasedFromLiftThisStep = false;
   const currentSlope = trackSlopeAtDistance(simulationDistance);
   const currentAcceleration = -gravity * currentSlope;
-  const nextDistance = simulationDistance + simulationVelocity * simulationStep
+  let nextDistance = simulationDistance + simulationVelocity * simulationStep
     + 0.5 * currentAcceleration * simulationStep ** 2;
+  if (liftJustReleased) {
+    liftJustReleased = false;
+    releasedFromLiftThisStep = true;
+    // At a stationary crest, gravity has no tangent component to choose a direction.
+    const forwardDistance = Math.min(trackLength, simulationDistance + liftReleaseNudgeDistance);
+    if (trackPointAtDistance(forwardDistance).height < startingHeight) {
+      nextDistance = forwardDistance;
+    }
+  }
 
   if (nextDistance <= 0 || nextDistance >= trackLength) {
     const previousDistance = simulationDistance;
@@ -590,7 +616,9 @@ function advanceSimulation() {
   const nextAcceleration = -gravity * trackSlopeAtDistance(nextDistance);
   const nextVelocity = simulationVelocity
     + 0.5 * (currentAcceleration + nextAcceleration) * simulationStep;
-  const direction = Math.sign(nextVelocity || nextDistance - simulationDistance || currentAcceleration || 1);
+  const direction = releasedFromLiftThisStep
+    ? 1
+    : Math.sign(nextVelocity || nextDistance - simulationDistance || currentAcceleration || 1);
   const energySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - nextHeight));
   const projectedNextVelocity = direction * energySpeed;
   const projectedNextGForce = riderGForceAt(nextDistance, projectedNextVelocity);
@@ -640,6 +668,7 @@ function startRide() {
   stopAnimation();
   simulationDistance = 0;
   liftActive = Boolean(liftConfiguration);
+  liftJustReleased = false;
   simulationVelocity = liftActive ? liftSpeed : 0;
   startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   simulationState = 'running';
