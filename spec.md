@@ -64,7 +64,7 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 - Provide an optional spoken readout of speed and G-force, with a control to enable or disable narration.
 - Show plots of speed (mph) and G-force (g) against distance along the track. Label both axes and identify the current cart position.
 - Provide an ideal, frictionless speed reference based on conservation of energy.
-- Mark the location of a rollback, G-force failure, or finish crossing on the track, and state the outcome.
+- Mark the location of a rollback, G-force failure, or finish crossing on the track, and state the outcome. For a rollback, explain that the cart lacked enough velocity to clear the next hill and suggest increasing the starting drop or lowering the next crest.
 - Provide an Edit current track action on the ride drawing; selecting it stops and resets the current run and returns to the editor without losing the track or rider-mass setting.
 
 ## Look and Feel

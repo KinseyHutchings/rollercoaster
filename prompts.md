@@ -151,3 +151,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Complete the runtime/browser validation for the Stage 5 powered lift.
 - **What you changed:** Fixed the stale lift-status display after crest release and added a small forward branch selection at the stationary crest so the cart proceeds downhill while preserving the energy-based speed.
 - **Whether it worked:** Browser checks passed: the lift read 5 m/s, released at 0 m/s at about 37 m, then moved forward at 0.18384 m/s versus 0.18393 m/s ideal after one second. A monotonic uphill track was rejected with a clear-crest message and Start disabled. Reload returned to a valid starter track with no page errors; `git diff --check` passed.
+
+## 26. Mark and explain rollbacks
+
+- **What I asked:** Mark where the cart rolls backward and explain that it lacked velocity, with ways to gain enough speed.
+- **What you changed:** Added a persistent X marker at the turnaround point, a rollback status and explanation suggesting a larger starting drop or lower next crest, and the matching specification output.
+- **Whether it worked:** Browser testing confirmed that an unreachable crest triggers the rollback status, visible marker, and guidance; resetting hides the marker. No page errors occurred.

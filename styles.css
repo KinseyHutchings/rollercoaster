@@ -294,11 +294,18 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .track-edit-button span { color: var(--green); }
 .ride-status-pill { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: #7a8a80; background: #f1f5f0; font-size: 8px; white-space: nowrap; }
 .ride-status-pill.is-failed { color: #a63e30; background: #fff0ec; }
+.ride-status-pill.is-rollback { color: #8a6323; background: #fff4d9; }
 .track-position-label { position: absolute; top: 48%; left: 8%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; border: 1px solid #f0ddd5; border-radius: 99px; color: #9a695a; background: rgba(255,255,255,.9); font-size: 8px; font-weight: 700; letter-spacing: .08em; }
 .position-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px #fff0ec; }
 .failure-marker { display: none; fill: #fff1ed; stroke: #c94f3d; stroke-width: 4; }
 .failure-marker.is-visible { display: initial; }
 .failure-marker path { stroke-linecap: round; stroke-width: 5; }
+.rollback-marker { display: none; fill: #fff5dc; stroke: #b2782d; stroke-width: 4; }
+.rollback-marker.is-visible { display: initial; }
+.rollback-marker path { stroke-linecap: round; stroke-width: 5; }
+.rollback-notice { margin-top: 12px; padding: 12px 15px; border: 1px solid #f1d7a2; border-radius: 11px; color: #745827; background: #fff9e9; }
+.rollback-notice strong { font-size: 11px; }
+.rollback-notice p { margin: 4px 0 0; font-size: 10px; line-height: 1.5; }
 .chart-card { min-width: 0; padding: 17px 17px 12px; }
 .chart-heading { display: flex; align-items: center; justify-content: space-between; }
 .chart-heading .eyebrow { margin-bottom: 4px; font-size: 8px; }

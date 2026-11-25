@@ -203,6 +203,10 @@
                     <circle r="18"></circle>
                     <path d="M0-9v11m0 5v1"></path>
                   </g>
+                  <g class="rollback-marker" id="ride-rollback-marker" aria-label="Rollback location">
+                    <circle r="18"></circle>
+                    <path d="M-7-7L7 7M7-7L-7 7"></path>
+                  </g>
                 </svg>
                 <div class="track-position-label"><span class="position-pulse"></span><span id="ride-position-label">READY AT START</span></div>
               </div>
@@ -253,6 +257,11 @@
               <div class="chart-footer"><span>Distance along track</span><span>LIVE DATA PREVIEW</span></div>
               </section>
             </div>
+          </div>
+
+          <div class="rollback-notice" id="rollback-notice" role="status" aria-live="polite" hidden>
+            <strong>The cart rolled backward</strong>
+            <p>It did not have enough velocity to clear the next hill. Raise the starting point to increase the drop, or lower the next crest so the cart can reach it.</p>
           </div>
 
           <div class="ride-footer">

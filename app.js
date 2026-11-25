@@ -19,6 +19,8 @@ const rideRail = document.querySelector('#ride-rail');
 const rideCart = document.querySelector('#ride-cart');
 const rideFinishFlag = document.querySelector('#ride-finish');
 const rideFailureMarker = document.querySelector('#ride-failure-marker');
+const rideRollbackMarker = document.querySelector('#ride-rollback-marker');
+const rollbackNotice = document.querySelector('#rollback-notice');
 const trackStatus = document.querySelector('#track-validation');
 const trackStatusIcon = document.querySelector('#track-status-icon');
 const selectedPointName = document.querySelector('#selected-point-name');
@@ -84,6 +86,7 @@ let simulationVelocity = 0;
 let liftJustReleased = false;
 let simulationState = 'idle';
 let gForceFailureLimit = null;
+let rollbackDistance = null;
 let simulationFrame = null;
 let lastFrameTime = null;
 let timeAccumulator = 0;
@@ -422,6 +425,13 @@ function updateRideScene() {
     const failurePosition = toScreen(position);
     rideFailureMarker.setAttribute('transform', `translate(${failurePosition.x.toFixed(2)} ${failurePosition.y.toFixed(2)})`);
   }
+  const rollbackMarkerVisible = rollbackDistance !== null;
+  rideRollbackMarker.classList.toggle('is-visible', rollbackMarkerVisible);
+  rollbackNotice.hidden = !rollbackMarkerVisible;
+  if (rollbackMarkerVisible) {
+    const rollbackPosition = toScreen(trackPointAtDistance(rollbackDistance));
+    rideRollbackMarker.setAttribute('transform', `translate(${rollbackPosition.x.toFixed(2)} ${rollbackPosition.y.toFixed(2)})`);
+  }
 
   if (simulationState === 'running' && liftActive) {
     ridePositionLabel.textContent = `LIFT HILL · ${position.x.toFixed(1)} m`;
@@ -443,12 +453,21 @@ function updateRideControls() {
   const isRunning = simulationState === 'running';
   const isPaused = simulationState === 'paused';
   rideStatus.classList.toggle('is-failed', simulationState === 'failed');
+  rideStatus.classList.toggle('is-rollback', rollbackDistance !== null && simulationState !== 'failed');
   pauseButton.disabled = !isRunning && !isPaused;
   resetButton.disabled = simulationState === 'idle';
   pauseButton.innerHTML = isPaused ? '▶ <span>Resume</span>' : 'Ⅱ <span>Pause</span>';
   pauseButton.setAttribute('aria-label', isPaused ? 'Resume ride' : 'Pause ride');
 
-  if (isRunning) {
+  if (simulationState === 'failed') {
+    rideStatus.textContent = 'G-FORCE FAILURE';
+    rideControlHint.textContent = gForceFailureLimit === gForceLimits.maximum
+      ? 'Ride stopped after exceeding the +4.0 g limit.'
+      : 'Ride stopped after dropping below the −1.0 g limit.';
+  } else if (rollbackDistance !== null) {
+    rideStatus.textContent = isPaused ? 'PAUSED · ROLLBACK' : 'ROLLBACK';
+    rideControlHint.textContent = 'The cart did not have enough velocity to clear the next hill.';
+  } else if (isRunning) {
     rideStatus.textContent = liftActive ? 'LIFT HILL' : 'RUNNING · IDEAL MODE';
     rideControlHint.textContent = liftActive
       ? 'Powered lift at 5 m/s · release at first crest.'
@@ -459,11 +478,6 @@ function updateRideControls() {
   } else if (simulationState === 'stopped') {
     rideStatus.textContent = 'AT TRACK END';
     rideControlHint.textContent = 'Track endpoint reached; finish braking is a later stage.';
-  } else if (simulationState === 'failed') {
-    rideStatus.textContent = 'G-FORCE FAILURE';
-    rideControlHint.textContent = gForceFailureLimit === gForceLimits.maximum
-      ? 'Ride stopped after exceeding the +4.0 g limit.'
-      : 'Ride stopped after dropping below the −1.0 g limit.';
   } else {
     rideStatus.textContent = 'READY';
     rideControlHint.textContent = 'Start your ride to begin.';
@@ -633,6 +647,11 @@ function advanceSimulation() {
     return;
   }
 
+  if (rollbackDistance === null && simulationVelocity >= 0 && projectedNextVelocity < 0) {
+    rollbackDistance = simulationDistance;
+    updateRideControls();
+  }
+
   simulationVelocity = projectedNextVelocity;
   simulationDistance = nextDistance;
 }
@@ -669,6 +688,7 @@ function startRide() {
   simulationDistance = 0;
   liftActive = Boolean(liftConfiguration);
   liftJustReleased = false;
+  rollbackDistance = null;
   simulationVelocity = liftActive ? liftSpeed : 0;
   startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   simulationState = 'running';
@@ -702,6 +722,7 @@ function resetRide() {
   liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
+  rollbackDistance = null;
   lockEditor(false);
   renderTrack();
   updateRideControls();
@@ -723,6 +744,7 @@ function startNewTrack() {
   liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
+  rollbackDistance = null;
   lockEditor(false);
   showScreen('editor');
   renderTrack();
@@ -736,6 +758,7 @@ function editCurrentTrack() {
   liftActive = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
+  rollbackDistance = null;
   lockEditor(false);
   renderTrack();
   updateRideControls();
