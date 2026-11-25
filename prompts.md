@@ -157,3 +157,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Mark where the cart rolls backward and explain that it lacked velocity, with ways to gain enough speed.
 - **What you changed:** Added a persistent X marker at the turnaround point, a rollback status and explanation suggesting a larger starting drop or lower next crest, and the matching specification output.
 - **Whether it worked:** Browser testing confirmed that an unreachable crest triggers the rollback status, visible marker, and guidance; resetting hides the marker. No page errors occurred.
+
+## 27. Build Stage 6 resistance and ride outcomes
+
+- **What I asked:** Build only Stage 6 from the Build stages section of `spec.md`.
+- **What you changed:** Added fixed rolling-resistance and air-drag parameters, loss-aware gravity motion, braking after finish crossing, and a completed ride outcome. Documented the model values and updated the stage indicator and ride descriptions.
+- **Whether it worked:** Browser checks showed mechanical energy decreasing (no sampled increase), the starter ride braking from 18.58 m/s to rest and reporting completion, and an unreachable crest triggering the rollback marker and guidance. No page errors occurred; `git diff --check` passes.
+
+## 28. Begin braking before the finish
+
+- **What I asked:** Start slowing the cart before it reaches the finish line.
+- **What you changed:** Changed finish braking to begin when the remaining distance reaches the estimated stopping distance, documented the pre-finish braking behavior in `spec.md`, and clarified the braking hint in the ride controls.
+- **Whether it worked:** Browser validation showed braking started at 97.67 m with 15.69 m remaining and a calculated stopping distance of 15.89 m. Speed decreased through the approach, the cart stopped at the finish and reported ride completion, and no browser errors occurred.

@@ -71,6 +71,10 @@ const metersPerSecondToMph = 2.2369362921;
 const simulationStep = 1 / 120;
 const liftSpeed = 5;
 const liftReleaseNudgeDistance = 0.05;
+const rollingResistanceCoefficient = 0.005;
+const airDensityKgPerCubicMeter = 1.225;
+const dragAreaSquareMeters = 0.8;
+const finishBrakeDeceleration = 4;
 const gForceLimits = { maximum: 4, minimum: -1 };
 
 let selectedIndex = 0;
@@ -87,6 +91,7 @@ let liftJustReleased = false;
 let simulationState = 'idle';
 let gForceFailureLimit = null;
 let rollbackDistance = null;
+let finishBraking = false;
 let simulationFrame = null;
 let lastFrameTime = null;
 let timeAccumulator = 0;
@@ -272,6 +277,26 @@ function trackCurvatureAtDistance(distance) {
   return angleChange / (highDistance - lowDistance);
 }
 
+function tangentialAccelerationAt(distance, velocity, braking = false) {
+  const gravityAcceleration = -gravity * trackSlopeAtDistance(distance);
+  const rollingAcceleration = rollingResistanceCoefficient
+    * gravity * Math.max(0, Math.cos(trackTangentAngleAtDistance(distance)));
+  const totalMassKg = cartMassKg + Number(riderMassInput.value);
+  const dragAcceleration = airDensityKgPerCubicMeter * dragAreaSquareMeters
+    / (2 * totalMassKg) * velocity * Math.abs(velocity);
+
+  if (Math.abs(velocity) < 0.001) {
+    return gravityAcceleration;
+  }
+
+  const naturalAcceleration = gravityAcceleration
+    - Math.sign(velocity) * rollingAcceleration
+    - dragAcceleration;
+  return braking && velocity > 0
+    ? Math.min(naturalAcceleration, -finishBrakeDeceleration)
+    : naturalAcceleration;
+}
+
 function findLiftConfiguration() {
   if (controlPoints.length < 2 || controlPoints[1].height <= controlPoints[0].height) {
     return null;
@@ -433,7 +458,9 @@ function updateRideScene() {
     rideRollbackMarker.setAttribute('transform', `translate(${rollbackPosition.x.toFixed(2)} ${rollbackPosition.y.toFixed(2)})`);
   }
 
-  if (simulationState === 'running' && liftActive) {
+  if (simulationState === 'running' && finishBraking) {
+    ridePositionLabel.textContent = `BRAKING · FINISH · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'running' && liftActive) {
     ridePositionLabel.textContent = `LIFT HILL · ${position.x.toFixed(1)} m`;
   } else if (simulationState === 'running') {
     ridePositionLabel.textContent = `CART POSITION · ${position.x.toFixed(1)} m`;
@@ -444,6 +471,8 @@ function updateRideScene() {
     ridePositionLabel.textContent = `G-FORCE FAILURE · ${limit} · ${position.x.toFixed(1)} m`;
   } else if (simulationState === 'stopped') {
     ridePositionLabel.textContent = `TRACK END · ${position.x.toFixed(1)} m`;
+  } else if (simulationState === 'completed') {
+    ridePositionLabel.textContent = `RIDE COMPLETE · ${position.x.toFixed(1)} m`;
   } else {
     ridePositionLabel.textContent = 'READY AT START';
   }
@@ -454,6 +483,7 @@ function updateRideControls() {
   const isPaused = simulationState === 'paused';
   rideStatus.classList.toggle('is-failed', simulationState === 'failed');
   rideStatus.classList.toggle('is-rollback', rollbackDistance !== null && simulationState !== 'failed');
+  rideStatus.classList.toggle('is-completed', simulationState === 'completed');
   pauseButton.disabled = !isRunning && !isPaused;
   resetButton.disabled = simulationState === 'idle';
   pauseButton.innerHTML = isPaused ? '▶ <span>Resume</span>' : 'Ⅱ <span>Pause</span>';
@@ -467,11 +497,17 @@ function updateRideControls() {
   } else if (rollbackDistance !== null) {
     rideStatus.textContent = isPaused ? 'PAUSED · ROLLBACK' : 'ROLLBACK';
     rideControlHint.textContent = 'The cart did not have enough velocity to clear the next hill.';
+  } else if (finishBraking) {
+    rideStatus.textContent = isPaused ? 'PAUSED · BRAKING' : 'BRAKING';
+    rideControlHint.textContent = 'The cart is slowing before the finish and will brake to a stop.';
+  } else if (simulationState === 'completed') {
+    rideStatus.textContent = 'RIDE COMPLETE';
+    rideControlHint.textContent = 'The cart crossed the finish and came to a stop.';
   } else if (isRunning) {
-    rideStatus.textContent = liftActive ? 'LIFT HILL' : 'RUNNING · IDEAL MODE';
+    rideStatus.textContent = liftActive ? 'LIFT HILL' : 'RUNNING · WITH LOSSES';
     rideControlHint.textContent = liftActive
       ? 'Powered lift at 5 m/s · release at first crest.'
-      : 'Gravity only after lift release · no friction or air drag.';
+      : 'Gravity, rolling resistance, and air drag after lift release.';
   } else if (isPaused) {
     rideStatus.textContent = 'PAUSED';
     rideControlHint.textContent = 'Ride paused.';
@@ -559,7 +595,6 @@ function stopAtGForceLimit(startDistance, endDistance, startVelocity, endVelocit
 function advanceSimulation() {
   if (liftActive) {
     const nextDistance = Math.min(trackLength, simulationDistance + liftSpeed * simulationStep);
-    const currentGForce = riderGForceAt(simulationDistance, liftSpeed);
     const nextGForce = riderGForceAt(nextDistance, liftSpeed);
     if (exceedsGForceLimits(nextGForce)) {
       stopAtGForceLimit(simulationDistance, nextDistance, liftSpeed, liftSpeed, nextGForce);
@@ -577,33 +612,63 @@ function advanceSimulation() {
     return;
   }
 
+  if (!finishBraking && simulationVelocity > 0) {
+    const remainingDistance = trackLength - simulationDistance;
+    if (simulationVelocity ** 2 / (2 * finishBrakeDeceleration) >= remainingDistance) {
+      finishBraking = true;
+      updateRideControls();
+    }
+  }
+
+  if (finishBraking && simulationDistance >= trackLength) {
+    simulationVelocity = Math.max(0, simulationVelocity - finishBrakeDeceleration * simulationStep);
+    if (simulationVelocity === 0) {
+      finishBraking = false;
+      simulationState = 'completed';
+      stopAnimation();
+      updateRideScene();
+      updateRideControls();
+    }
+    return;
+  }
+
   let releasedFromLiftThisStep = false;
-  const currentSlope = trackSlopeAtDistance(simulationDistance);
-  const currentAcceleration = -gravity * currentSlope;
-  let nextDistance = simulationDistance + simulationVelocity * simulationStep
-    + 0.5 * currentAcceleration * simulationStep ** 2;
+  const previousDistance = simulationDistance;
+  const previousVelocity = simulationVelocity;
+  const currentAcceleration = tangentialAccelerationAt(previousDistance, previousVelocity, finishBraking);
+  let nextVelocity = previousVelocity + currentAcceleration * simulationStep;
+  let nextDistance = previousDistance + 0.5 * (previousVelocity + nextVelocity) * simulationStep;
   if (liftJustReleased) {
     liftJustReleased = false;
     releasedFromLiftThisStep = true;
-    // At a stationary crest, gravity has no tangent component to choose a direction.
     const forwardDistance = Math.min(trackLength, simulationDistance + liftReleaseNudgeDistance);
     if (trackPointAtDistance(forwardDistance).height < startingHeight) {
       nextDistance = forwardDistance;
     }
   }
 
+  const nextAcceleration = tangentialAccelerationAt(nextDistance, nextVelocity, finishBraking);
+  nextVelocity = previousVelocity
+    + 0.5 * (currentAcceleration + nextAcceleration) * simulationStep;
+  if (releasedFromLiftThisStep) {
+    nextVelocity = Math.max(0, nextVelocity);
+  } else {
+    nextDistance = previousDistance + 0.5 * (previousVelocity + nextVelocity) * simulationStep;
+  }
+
   if (nextDistance <= 0 || nextDistance >= trackLength) {
-    const previousDistance = simulationDistance;
     const boundaryDistance = Math.max(0, Math.min(trackLength, nextDistance));
-    const heightAtBoundary = trackPointAtDistance(boundaryDistance).height;
-    const boundarySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - heightAtBoundary));
-    const boundaryVelocity = Math.sign(nextDistance - boundaryDistance || simulationVelocity || 1) * boundarySpeed;
+    const boundaryFraction = nextDistance === previousDistance
+      ? 0
+      : (boundaryDistance - previousDistance) / (nextDistance - previousDistance);
+    const boundaryVelocity = previousVelocity
+      + (nextVelocity - previousVelocity) * Math.max(0, Math.min(1, boundaryFraction));
     const boundaryGForce = riderGForceAt(boundaryDistance, boundaryVelocity);
     if (exceedsGForceLimits(boundaryGForce)) {
       stopAtGForceLimit(
         previousDistance,
         boundaryDistance,
-        simulationVelocity,
+        previousVelocity,
         boundaryVelocity,
         boundaryGForce,
       );
@@ -611,11 +676,18 @@ function advanceSimulation() {
     }
 
     simulationDistance = boundaryDistance;
-    simulationVelocity = boundaryVelocity;
-    simulationState = 'stopped';
-    stopAnimation();
-    updateRideScene();
-    updateRideControls();
+    if (boundaryDistance === trackLength && boundaryVelocity > 0) {
+      simulationVelocity = boundaryVelocity;
+      finishBraking = true;
+      updateRideScene();
+      updateRideControls();
+    } else {
+      simulationVelocity = 0;
+      simulationState = 'stopped';
+      stopAnimation();
+      updateRideScene();
+      updateRideControls();
+    }
     return;
   }
 
@@ -627,32 +699,30 @@ function advanceSimulation() {
     return;
   }
 
-  const nextAcceleration = -gravity * trackSlopeAtDistance(nextDistance);
-  const nextVelocity = simulationVelocity
-    + 0.5 * (currentAcceleration + nextAcceleration) * simulationStep;
-  const direction = releasedFromLiftThisStep
-    ? 1
-    : Math.sign(nextVelocity || nextDistance - simulationDistance || currentAcceleration || 1);
-  const energySpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - nextHeight));
-  const projectedNextVelocity = direction * energySpeed;
-  const projectedNextGForce = riderGForceAt(nextDistance, projectedNextVelocity);
+  const projectedNextGForce = riderGForceAt(nextDistance, nextVelocity);
   if (exceedsGForceLimits(projectedNextGForce)) {
     stopAtGForceLimit(
-      simulationDistance,
+      previousDistance,
       nextDistance,
-      simulationVelocity,
-      projectedNextVelocity,
+      previousVelocity,
+      nextVelocity,
       projectedNextGForce,
     );
     return;
   }
 
-  if (rollbackDistance === null && simulationVelocity >= 0 && projectedNextVelocity < 0) {
-    rollbackDistance = simulationDistance;
+  if (rollbackDistance === null && previousVelocity >= 0 && nextVelocity < 0) {
+    const turnFraction = previousVelocity === 0
+      ? 0
+      : previousVelocity / (previousVelocity - nextVelocity);
+    const turnTime = turnFraction * simulationStep;
+    const turnAcceleration = (nextVelocity - previousVelocity) / simulationStep;
+    rollbackDistance = previousDistance + previousVelocity * turnTime
+      + 0.5 * turnAcceleration * turnTime ** 2;
     updateRideControls();
   }
 
-  simulationVelocity = projectedNextVelocity;
+  simulationVelocity = nextVelocity;
   simulationDistance = nextDistance;
 }
 
@@ -689,6 +759,7 @@ function startRide() {
   liftActive = Boolean(liftConfiguration);
   liftJustReleased = false;
   rollbackDistance = null;
+  finishBraking = false;
   simulationVelocity = liftActive ? liftSpeed : 0;
   startingHeight = liftConfiguration?.releaseHeight ?? controlPoints[0].height;
   simulationState = 'running';
@@ -720,6 +791,7 @@ function resetRide() {
   simulationDistance = 0;
   simulationVelocity = 0;
   liftActive = false;
+  finishBraking = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;
@@ -742,6 +814,7 @@ function startNewTrack() {
   simulationDistance = 0;
   simulationVelocity = 0;
   liftActive = false;
+  finishBraking = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;
@@ -756,6 +829,7 @@ function editCurrentTrack() {
   simulationDistance = 0;
   simulationVelocity = 0;
   liftActive = false;
+  finishBraking = false;
   simulationState = 'idle';
   gForceFailureLimit = null;
   rollbackDistance = null;

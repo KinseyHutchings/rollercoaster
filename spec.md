@@ -29,6 +29,8 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
   \]
 
 - During the powered lift, constrain the cart to 5 m/s. The lift supplies external energy; after release, use the crest's release height as \(h_0\) in the ideal gravity equation.
+- Model rolling resistance as \(a_r = C_{rr}g\cos(\theta)\), with a fixed coefficient \(C_{rr}=0.005\). Model air drag as \(F_d = \frac{1}{2}\rho C_dA v^2\), using fixed air density \(\rho=1.225\ \mathrm{kg/m^3}\) and drag area \(C_dA=0.8\ \mathrm{m^2}\); use total vehicle mass to calculate drag acceleration.
+- Begin braking when the remaining track distance is within the estimated stopping distance \(v^2/(2a_b)\), using a net braking deceleration of at least \(a_b=4\ \mathrm{m/s^2}\). Continue braking after finish crossing if needed, and report completion when the cart reaches rest.
 - Use a fixed cart mass of 225 kg and let the user set rider mass from 20–200 kg (default 75 kg). Use their sum as the total vehicle mass for potential energy and dynamics.
 - The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for rolling resistance and drag; the total vehicle mass is the fixed cart mass plus the user's rider mass. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
 - Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules. In gravity-only mode, changing rider mass changes potential energy but not speed; normalized G-force in units of \(g\) is also independent of rider mass. The corresponding support/restraint force in newtons does scale with rider mass.
@@ -128,8 +130,8 @@ Let a user design and ride a 2D roller coaster with hills and valleys, including
 
 ### 6. Add resistance and ride outcomes
 
-- **Build:** Rolling resistance and air drag using documented fixed parameter values, energy-loss behavior, rollback when the cart cannot reach a crest, and braking after the finish line.
-- **Check:** Resistance never adds mechanical energy; a cart unable to reach a crest stops and rolls back; a cart crossing the finish line brakes to a stop and reports completion.
+- **Build:** Rolling resistance (\(C_{rr}=0.005\)) and air drag (\(\rho=1.225\ \mathrm{kg/m^3}\), \(C_dA=0.8\ \mathrm{m^2}\)) using the configured total vehicle mass, energy-loss behavior, rollback when the cart cannot reach a crest, and braking that begins within the estimated stopping distance of the finish with at least \(4\ \mathrm{m/s^2}\) net deceleration.
+- **Check:** Resistance never adds mechanical energy; a cart unable to reach a crest stops and rolls back with its location marked; the cart begins slowing before the finish, then brakes to rest and reports completion.
 
 ### 7. Complete ride feedback and validation
 
