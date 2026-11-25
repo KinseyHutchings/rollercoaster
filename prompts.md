@@ -91,3 +91,15 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Build only Stage 3 from the Build stages section of `spec.md`.
 - **What you changed:** Implemented gravity-only cart motion along the edited track, fixed-step simulation, live ideal-speed and potential-energy readouts, and pause/resume/reset controls. Updated `spec.md` with Stage 3 behavior and the prototype 300 kg combined cart-and-rider mass. G-force physics, resistance, charts, and narration remain out of this stage.
 - **Whether it worked:** Browser checks confirmed the speed matches the ideal energy equation as the cart moves, the cart follows the edited track, controls work, and the run reports when it reaches the track endpoint. The editor and ride layouts had no horizontal overflow at 390px, 768px, or 1280px. A standalone Node.js syntax check was unavailable; browser runtime checks succeeded.
+
+## 16. Validate uphill speed and add rider mass
+
+- **What I asked:** Validate that the cart's velocity is correct on uphill sections, add a user-adjustable rider mass, and account for its effects on speed, potential energy, and future G-force calculations.
+- **What you changed:** Changed the velocity readout to use the simulated speed while keeping ideal speed as a separate reference. Added a 20–200 kg rider-mass slider (default 75 kg), a fixed 225 kg cart mass, and mass-aware potential-energy readouts. Updated `spec.md` to document that rider mass changes potential energy and absolute support force, but not ideal speed or normalized G-force in gravity-only mode.
+- **Whether it worked:** Browser checks sampled the full ride: measured speed matched the energy equation within 0.05 mph (display rounding), and speed decreased through the uphill section; at about 30 m high it read 31.4 mph, as predicted. Increasing rider mass from 75 kg to 125 kg raised total mass from 300 kg to 350 kg and potential energy from 117.8 kJ to 137.4 kJ, while ideal speed stayed unchanged. The mass control locks during a run, unlocks on reset, responsive widths showed no overflow, and there were no browser page errors. G-force calculation remains a future stage.
+
+## 17. Add a start-over action
+
+- **What I asked:** Add a button to start over or create a new track. I chose restoring the built-in starter track and requiring confirmation before replacing the current design.
+- **What you changed:** Added a Start over button that confirms before replacing the current layout, stops any active run, restores the starter track, and preserves rider mass. Updated the Stage 2 build/check details in `spec.md`.
+- **Whether it worked:** Browser checks confirmed canceling preserves the edited track and active run; confirming restores the starter layout, returns to the editor, resets the cart, and unlocks editing. No browser page errors occurred, and `git diff --check` passed.

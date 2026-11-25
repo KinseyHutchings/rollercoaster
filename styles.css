@@ -233,6 +233,14 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .secondary-button:disabled { color: #a8b0aa; background: #f8faf7; cursor: default; }
 .button-row .secondary-button { flex: 1; }
 .button-row .secondary-button span { color: var(--green); font-size: 15px; }
+.rider-mass-control { margin-top: 15px; padding: 11px 10px 10px; border: 1px solid #edf0ec; border-radius: 9px; background: #fbfcf9; }
+.rider-mass-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rider-mass-heading label { color: #7b8780; font-size: 9px; font-weight: 700; letter-spacing: .08em; }
+.rider-mass-heading output { color: #47574e; font-size: 11px; font-weight: 700; }
+.rider-mass-control input { display: block; width: 100%; margin: 9px 0 5px; accent-color: var(--green); cursor: pointer; }
+.rider-mass-control input:disabled { cursor: default; }
+.rider-mass-range { display: flex; justify-content: space-between; color: #9aa39d; font-size: 8px; }
+.rider-mass-control p { margin: 0; color: #78847c; font-size: 9px; line-height: 1.5; }
 .selected-point { display: flex; align-items: center; gap: 8px; margin-top: 17px; padding: 11px 10px; border: 1px solid #edf0ec; border-radius: 9px; color: #7b8780; font-size: 10px; }
 .selected-point strong { margin-left: auto; color: #47574e; font-size: 10px; }
 .selection-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px #fff0ec; }
@@ -242,6 +250,8 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .primary-button { display: flex; width: 100%; min-height: 43px; align-items: center; justify-content: space-between; padding: 0 14px; border: 0; border-radius: 10px; color: #fff; background: var(--green); cursor: pointer; font-size: 11px; font-weight: 700; transition: background .15s ease, transform .15s ease; }
 .primary-button:hover { background: var(--green-dark); transform: translateY(-1px); }
 .primary-button span { font-size: 17px; }
+.new-track-button { width: 100%; margin-top: 9px; }
+.new-track-button span { color: var(--green); font-size: 15px; }
 .mockup-note { margin: 9px 0 0; color: #a0aaa3; font-size: 9px; line-height: 1.5; text-align: center; }
 .mini-card { padding: 14px 16px; }
 .mini-card-title { display: flex; justify-content: space-between; margin-bottom: 12px; color: #849087; font-size: 8px; font-weight: 700; letter-spacing: .12em; }

@@ -23,7 +23,10 @@ const trackStatusIcon = document.querySelector('#track-status-icon');
 const selectedPointName = document.querySelector('#selected-point-name');
 const addPointButton = document.querySelector('#add-point');
 const removePointButton = document.querySelector('#remove-point');
+const riderMassInput = document.querySelector('#rider-mass');
+const riderMassValue = document.querySelector('#rider-mass-value');
 const startButton = document.querySelector('#preview-ride');
+const newTrackButton = document.querySelector('#new-track');
 const pauseButton = document.querySelector('#toggle-ride');
 const resetButton = document.querySelector('#reset-ride');
 const rideStatus = document.querySelector('.ride-status-pill');
@@ -32,6 +35,8 @@ const rideControlHint = document.querySelector('#ride-control-hint');
 const velocityReadouts = document.querySelectorAll('[data-readout="velocity"]');
 const potentialEnergyReadouts = document.querySelectorAll('[data-readout="potential-energy"]');
 const idealSpeedReadouts = document.querySelectorAll('[data-readout="ideal-speed"]');
+const riderMassReadouts = document.querySelectorAll('[data-readout="rider-mass"]');
+const totalMassReadouts = document.querySelectorAll('[data-readout="total-mass"]');
 
 const world = {
   minX: 0,
@@ -45,16 +50,17 @@ const world = {
   fillBaseY: 420,
 };
 
-const controlPoints = [
+const starterTrack = [
   { x: 0, height: 40 },
   { x: 23, height: 0 },
   { x: 48, height: 30 },
   { x: 72, height: 5 },
   { x: 100, height: 19 },
 ];
+const controlPoints = starterTrack.map(point => ({ ...point }));
 
 const gravity = 9.81;
-const combinedMassKg = 300;
+const cartMassKg = 225;
 const metersPerSecondToMph = 2.2369362921;
 const simulationStep = 1 / 120;
 
@@ -234,8 +240,10 @@ function updateReadouts() {
   const position = trackPointAtDistance(simulationDistance);
   const idealSpeed = Math.sqrt(2 * gravity * Math.max(0, startingHeight - position.height));
   const idealSpeedMph = idealSpeed * metersPerSecondToMph;
-  const speedMph = idealSpeedMph;
-  const potentialEnergyKj = combinedMassKg * gravity
+  const speedMph = Math.abs(simulationVelocity) * metersPerSecondToMph;
+  const riderMassKg = Number(riderMassInput.value);
+  const totalMassKg = cartMassKg + riderMassKg;
+  const potentialEnergyKj = totalMassKg * gravity
     * Math.max(0, position.height - lowestTrackHeight) / 1000;
 
   velocityReadouts.forEach(readout => {
@@ -246,6 +254,13 @@ function updateReadouts() {
   });
   potentialEnergyReadouts.forEach(readout => {
     readout.textContent = potentialEnergyKj.toFixed(1);
+  });
+  riderMassValue.value = `${riderMassKg} kg`;
+  riderMassReadouts.forEach(readout => {
+    readout.textContent = riderMassKg.toFixed(0);
+  });
+  totalMassReadouts.forEach(readout => {
+    readout.textContent = totalMassKg.toFixed(0);
   });
 
   return position;
@@ -321,6 +336,7 @@ function stopAnimation() {
 function lockEditor(locked) {
   addPointButton.disabled = locked;
   removePointButton.disabled = locked || controlPoints.length <= 2;
+  riderMassInput.disabled = locked;
   controlGroup.querySelectorAll('.control-handle').forEach(handle => {
     handle.setAttribute('aria-disabled', String(locked));
     handle.setAttribute('tabindex', locked ? '-1' : '0');
@@ -443,6 +459,25 @@ function resetRide() {
   updateRideScene();
   updateRideControls();
   showScreen('editor');
+}
+
+function startNewTrack() {
+  const confirmed = window.confirm('Start over with the starter track? Your current track will be replaced. Rider mass will be kept.');
+  if (!confirmed) {
+    return;
+  }
+
+  stopAnimation();
+  controlPoints.splice(0, controlPoints.length, ...starterTrack.map(point => ({ ...point })));
+  selectedIndex = 0;
+  draggingPointerId = null;
+  simulationDistance = 0;
+  simulationVelocity = 0;
+  simulationState = 'idle';
+  lockEditor(false);
+  showScreen('editor');
+  renderTrack();
+  updateRideControls();
 }
 
 function validateTrack(samples) {
@@ -732,7 +767,9 @@ trackSvg.addEventListener('pointerup', endDrag);
 trackSvg.addEventListener('pointercancel', endDrag);
 addPointButton.addEventListener('click', addPoint);
 removePointButton.addEventListener('click', removePoint);
+riderMassInput.addEventListener('input', updateReadouts);
 startButton.addEventListener('click', startRide);
+newTrackButton.addEventListener('click', startNewTrack);
 pauseButton.addEventListener('click', toggleRide);
 resetButton.addEventListener('click', resetRide);
 

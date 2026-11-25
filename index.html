@@ -68,7 +68,7 @@
                 <article class="metric-card energy-card">
                   <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
                   <div class="metric-value"><span data-readout="potential-energy">—</span> <span>kJ</span></div>
-                  <p class="metric-caption">Cart + rider · above track low point</p>
+                  <p class="metric-caption">Rider <span data-readout="rider-mass">75</span> kg · total <span data-readout="total-mass">300</span> kg · above track low point</p>
                 </article>
                 <article class="metric-card ideal-card">
                   <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>
@@ -126,6 +126,15 @@
                   <button class="secondary-button" id="add-point" type="button"><span aria-hidden="true">＋</span> Add point</button>
                   <button class="secondary-button" id="remove-point" type="button"><span aria-hidden="true">−</span> Remove</button>
                 </div>
+                <div class="rider-mass-control">
+                  <div class="rider-mass-heading">
+                    <label for="rider-mass">RIDER MASS</label>
+                    <output id="rider-mass-value" for="rider-mass" aria-live="polite">75 kg</output>
+                  </div>
+                  <input id="rider-mass" type="range" min="20" max="200" step="1" value="75" aria-describedby="rider-mass-note">
+                  <div class="rider-mass-range" aria-hidden="true"><span>20 kg</span><span>200 kg</span></div>
+                  <p id="rider-mass-note">Reset a run to change mass. With a 225 kg cart, rider mass changes potential energy, not ideal speed or G-force in g.</p>
+                </div>
                 <div class="selected-point">
                   <span class="selection-indicator"></span>
                   <span>Selected point</span>
@@ -139,6 +148,7 @@
                   Start ride <span aria-hidden="true">→</span>
                 </button>
                 <p class="mockup-note">Edit the track, then start a frictionless gravity run.</p>
+                <button class="secondary-button new-track-button" id="new-track" type="button"><span aria-hidden="true">↻</span> Start over</button>
               </section>
               <section class="mini-card">
                 <div class="mini-card-title"><span>RIDE SNAPSHOT</span><span class="mini-sparkle" aria-hidden="true">✳</span></div>
@@ -207,7 +217,7 @@
                 <article class="metric-card energy-card">
                   <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>TOTAL POTENTIAL ENERGY</span></div>
                   <div class="metric-value"><span data-readout="potential-energy">—</span> <span>kJ</span></div>
-                  <p class="metric-caption">Cart + rider · above track low point</p>
+                  <p class="metric-caption">Rider <span data-readout="rider-mass">75</span> kg · total <span data-readout="total-mass">300</span> kg · above track low point</p>
                 </article>
                 <article class="metric-card ideal-card">
                   <div class="metric-heading"><span class="metric-icon ideal-icon" aria-hidden="true">≈</span><span>IDEAL SPEED</span></div>

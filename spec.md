@@ -26,8 +26,9 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
   v = \sqrt{2g(h_0-h)}
   \]
 
-- The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for cart mass, rolling resistance, and drag; users do not need to enter them. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
-- Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules. Until configurable vehicle properties are added, use a documented prototype combined cart-and-rider mass of 300 kg.
+- Use a fixed cart mass of 225 kg and let the user set rider mass from 20–200 kg (default 75 kg). Use their sum as the total vehicle mass for potential energy and dynamics.
+- The ride simulation includes rolling resistance and air drag. Use documented, fixed model parameters for rolling resistance and drag; the total vehicle mass is the fixed cart mass plus the user's rider mass. The ideal equation above is the no-friction reference and validation case, not the speed calculation for a ride with losses.
+- Calculate total gravitational potential energy for the cart and rider relative to the track's lowest point: \(U = m_{\text{total}}g(h-h_{\min})\). Display this value in kilojoules. In gravity-only mode, changing rider mass changes potential energy but not speed; normalized G-force in units of \(g\) is also independent of rider mass. The corresponding support/restraint force in newtons does scale with rider mass.
 - Treat the cart and rider as a simplified rigid system that follows the track. Calculate the signed rider G-force as the track-normal support/restraint force divided by the rider's weight. Positive values press the rider into the seat; negative values represent restraint loading. At a horizontal valley with radius \(R\):
 
   \[
@@ -48,6 +49,7 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 - Show the cart and rider moving along the track.
 - During the ride, display speed in mph, signed rider G-force in g, and total gravitational potential energy in kJ. Convert speed from the internal units for display.
+- Provide a rider-mass control in kilograms and show rider and total vehicle mass beside the potential-energy readout.
 - Provide an optional spoken readout of speed and G-force, with a control to enable or disable narration.
 - Show plots of speed (mph) and G-force (g) against distance along the track. Label both axes and identify the current cart position.
 - Provide an ideal, frictionless speed reference based on conservation of energy.
@@ -67,8 +69,9 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 ## Validation
 
 - In ideal mode, verify that a cart starting from rest follows \(v = \sqrt{2g(h_0-h)}\) at points below the starting height.
+- Verify speed decreases on uphill sections as height increases and that changing rider mass does not change ideal speed.
 - On a horizontal valley, verify the G-force against \(n = 1 + v^2/(gR)\); on a horizontal crest, verify it against \(n = 1 - v^2/(gR)\).
-- Verify that potential energy is zero at the track's lowest point and increases with cart height.
+- Verify that potential energy is zero at the track's lowest point, increases with cart height, and scales linearly with total vehicle mass.
 - Verify that modeled rolling resistance and air drag do not increase the cart's mechanical energy.
 - Verify that the cart rolls back when it cannot reach the next crest.
 - Verify that crossing either G-force limit ends the run and marks the failure location.
@@ -85,23 +88,23 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 1. Mock up the page layout
 
-- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, Start button, cart, finish marker, live-readout placeholders for velocity, G-force, potential energy, and ideal speed, and graph placeholders.
-- **Check:** Editing and ride controls are easy to find, and the coaster drawing and all four ride measurements are visible together and remain readable on both screens. Do not depend on working physics in this stage.
+- **Build:** Static editor and ride-screen layouts, including the track area, point-editing controls, rider-mass input, Start button, cart, finish marker, live-readout placeholders for velocity, G-force, potential energy, and ideal speed, and graph placeholders.
+- **Check:** Editing and ride controls are easy to find, and the coaster drawing and all four ride measurements are visible together and remain readable on both screens. The rider-mass control communicates its range and units. Do not depend on working physics in this stage.
 
 ### 2. Build the track model and editor
 
-- **Build:** Store control points in world coordinates (horizontal distance and height in meters) and map them to the screen. Interpolate them with a centripetal Catmull–Rom spline, represented as cubic Bézier spans and sampled in world coordinates for validation and later motion/curvature calculations. Render the track, support selecting and dragging points, keyboard adjustments, adding and removing points, and basic track validation.
-- **Check:** Points remain anchored while edited; the curve updates predictably; the start and finish stay at the horizontal bounds, the starting crest is higher than the next point, and intermediate points remain ordered; invalid, zero-length, self-crossing, or looped tracks are rejected with a clear explanation; the Start button is unavailable for invalid tracks.
+- **Build:** Store control points in world coordinates (horizontal distance and height in meters) and map them to the screen. Interpolate them with a centripetal Catmull–Rom spline, represented as cubic Bézier spans and sampled in world coordinates for validation and later motion/curvature calculations. Render the track, support selecting and dragging points, keyboard adjustments, adding and removing points, and basic track validation. Add a Start over action that restores the starter track after confirmation.
+- **Check:** Points remain anchored while edited; the curve updates predictably; the start and finish stay at the horizontal bounds, the starting crest is higher than the next point, and intermediate points remain ordered; invalid, zero-length, self-crossing, or looped tracks are rejected with a clear explanation; the Start button is unavailable for invalid tracks. Canceling Start over preserves the current design; confirming it stops any run and restores the starter layout.
 
 ### 3. Add ideal motion
 
-- **Build:** Start-at-rest behavior and time-based cart movement constrained to the edited track, pause/resume/reset controls, live ideal speed, and total gravitational potential energy relative to the track's lowest point. Use gravity only; rolling resistance and air drag are not part of this stage.
-- **Check:** At points below the starting height, speed matches \(v = \sqrt{2g(h_0-h)}\); ideal total mechanical energy remains constant within numerical tolerance; the cart remains on the track and responds correctly to pause, resume, and reset.
+- **Build:** Start-at-rest behavior and time-based cart movement constrained to the edited track, pause/resume/reset controls, a rider-mass input, live speed and ideal-speed readouts, and total gravitational potential energy relative to the track's lowest point. Use gravity only; rolling resistance and air drag are not part of this stage.
+- **Check:** At points below the starting height, including uphill sections, speed matches \(v = \sqrt{2g(h_0-h)}\); changing rider mass changes potential energy but not ideal speed; ideal total mechanical energy remains constant within numerical tolerance; the cart remains on the track and responds correctly to pause, resume, and reset.
 
 ### 4. Add G-force calculations and limits
 
-- **Build:** Signed track-normal G-force calculations, live G-force display, and termination with a marked location when either specified G-force limit is crossed.
-- **Check:** Valley and crest results match the specified equations; ordinary track sections produce stable readings; crossing either limit reports a G-force failure rather than an energy-related rollback.
+- **Build:** Signed track-normal G-force calculations, live G-force display, and termination with a marked location when either specified G-force limit is crossed. If reporting support/restraint force in newtons, calculate it using the configured rider mass.
+- **Check:** Valley and crest results match the specified equations and normalized G-force is independent of rider mass; support/restraint force in newtons scales with rider mass; ordinary track sections produce stable readings; crossing either limit reports a G-force failure rather than an energy-related rollback.
 
 ### 5. Add resistance and ride outcomes
 
