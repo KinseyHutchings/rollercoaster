@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f7f1">
+    <title>Coaster Lab — Roller Coaster Designer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Coaster Lab home">
+          <span class="brand-mark" aria-hidden="true">↗</span>
+          <span>COASTER<span class="brand-light">LAB</span></span>
+        </a>
+        <div class="topbar-meta">
+          <span class="stage-pill"><span class="status-dot"></span> STAGE 01 · LAYOUT</span>
+          <span class="avatar" aria-label="Guest profile">G</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">YOUR LITTLE THEME PARK</p>
+            <h1 id="page-title">Roller Coaster Designer</h1>
+            <p class="page-subtitle">Shape a track, then see what the ride feels like.</p>
+          </div>
+          <div class="view-switcher" role="tablist" aria-label="Mockup screen">
+            <button class="view-tab is-active" id="editor-tab" role="tab" aria-selected="true" aria-controls="editor-screen" data-screen="editor">
+              <span aria-hidden="true">✎</span> Track editor
+            </button>
+            <button class="view-tab" id="ride-tab" role="tab" aria-selected="false" aria-controls="ride-screen" data-screen="ride">
+              <span aria-hidden="true">▶</span> Ride view
+            </button>
+          </div>
+        </section>
+
+        <section class="screen" id="editor-screen" role="tabpanel" aria-labelledby="editor-tab">
+          <div class="screen-title-row">
+            <div>
+              <p class="eyebrow">DESIGN MODE</p>
+              <h2>Shape your track</h2>
+            </div>
+            <span class="draft-pill">UNTITLED RIDE <span aria-hidden="true">·</span> DRAFT</span>
+          </div>
+
+          <div class="editor-grid">
+            <section class="track-card" aria-label="Track canvas mockup">
+              <div class="card-toolbar">
+                <span class="canvas-label"><span class="canvas-dot"></span> TRACK CANVAS</span>
+                <span class="canvas-hint">Drag points to shape your ride</span>
+                <button class="icon-button" type="button" aria-label="Canvas options" disabled>···</button>
+              </div>
+              <div class="track-canvas">
+                <div class="canvas-axis axis-x"><span>START</span><span>FINISH</span></div>
+                <svg class="track-art" viewBox="0 0 1000 470" role="img" aria-labelledby="track-title track-desc">
+                  <title id="track-title">Example roller-coaster track</title>
+                  <desc id="track-desc">A cart at the high starting point travels down through two hills toward the finish.</desc>
+                  <defs>
+                    <linearGradient id="track-fill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stop-color="#b6e3d2" stop-opacity=".48"></stop>
+                      <stop offset="1" stop-color="#b6e3d2" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path class="hill-fill" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252 L944 420 L56 420 Z"></path>
+                  <path class="track-support" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
+                  <path class="track-rail" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
+                  <g class="track-ties">
+                    <path d="M178 219l-23 13M226 301l-29 1M315 338l3 28M382 263l28 8M456 190l1 28M534 215l-28 15M610 288l-28 14M724 321l4 28M806 292l20 21M883 254l9 23"></path>
+                  </g>
+                  <g class="track-point point-start">
+                    <circle cx="56" cy="133" r="13"></circle>
+                    <circle class="point-core" cx="56" cy="133" r="4"></circle>
+                  </g>
+                  <g class="track-point" transform="translate(260 360)">
+                    <circle r="10"></circle><circle class="point-core" r="3"></circle>
+                  </g>
+                  <g class="track-point" transform="translate(481 190)">
+                    <circle r="10"></circle><circle class="point-core" r="3"></circle>
+                  </g>
+                  <g class="track-point" transform="translate(694 328)">
+                    <circle r="10"></circle><circle class="point-core" r="3"></circle>
+                  </g>
+                  <g class="cart-illustration" transform="translate(77 118)">
+                    <rect x="0" y="12" width="48" height="26" rx="8"></rect>
+                    <circle cx="12" cy="42" r="5"></circle><circle cx="37" cy="42" r="5"></circle>
+                    <circle class="rider-head" cx="25" cy="2" r="7"></circle>
+                    <path class="rider-body" d="M25 10v12m0-7-9 7m9-7 9 6m-9 1-7 10m7-10 8 9"></path>
+                  </g>
+                  <g class="finish-flag" transform="translate(944 252)">
+                    <path d="M0 0v-48" class="flag-pole"></path>
+                    <path d="M2-47h48l-10 12 10 12H2z" class="flag-cloth"></path>
+                  </g>
+                </svg>
+                <div class="canvas-legend">
+                  <span><i class="legend-dot start-dot"></i> Starting crest</span>
+                  <span><i class="legend-dot control-dot"></i> Control point</span>
+                  <span><i class="legend-flag">⚑</i> Finish line</span>
+                </div>
+              </div>
+              <div class="canvas-footer">
+                <span><span class="tiny-check">✓</span> Track preview</span>
+                <span>2D SIDE VIEW</span>
+              </div>
+            </section>
+
+            <aside class="editor-sidebar">
+              <section class="tool-card">
+                <div class="tool-card-heading">
+                  <span class="tool-icon" aria-hidden="true">⌁</span>
+                  <div><p class="eyebrow">TRACK TOOLS</p><h3>Edit your layout</h3></div>
+                </div>
+                <p class="tool-description">Your ride begins at the first hill and ends at the finish flag.</p>
+                <div class="button-row">
+                  <button class="secondary-button" type="button" disabled><span aria-hidden="true">＋</span> Add point</button>
+                  <button class="secondary-button" type="button" disabled><span aria-hidden="true">−</span> Remove</button>
+                </div>
+                <div class="selected-point">
+                  <span class="selection-indicator"></span>
+                  <span>Selected point</span>
+                  <strong>Start</strong>
+                </div>
+                <div class="instruction-box">
+                  <span class="instruction-icon" aria-hidden="true">i</span>
+                  <p>Drag a control point to shape the track. Add or remove points to design your ride.</p>
+                </div>
+                <button class="primary-button" id="preview-ride" type="button">
+                  Start ride <span aria-hidden="true">→</span>
+                </button>
+                <p class="mockup-note">Static layout preview — editing and simulation are not connected yet.</p>
+              </section>
+              <section class="mini-card">
+                <div class="mini-card-title"><span>RIDE SNAPSHOT</span><span class="mini-sparkle" aria-hidden="true">✳</span></div>
+                <div class="snapshot-row"><span>Track shape</span><strong>Preview only</strong></div>
+                <div class="snapshot-row"><span>Ride status</span><span class="status-chip">Not started</span></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="screen is-hidden" id="ride-screen" role="tabpanel" aria-labelledby="ride-tab" hidden>
+          <div class="screen-title-row ride-title-row">
+            <div>
+              <p class="eyebrow">RIDE MODE <span class="live-dot"></span> PREVIEW</p>
+              <h2>Your ride, at a glance</h2>
+            </div>
+            <button class="secondary-button back-button" id="back-to-editor" type="button"><span aria-hidden="true">←</span> Back to editor</button>
+          </div>
+
+          <div class="metrics-grid" aria-label="Ride measurement placeholders">
+            <article class="metric-card speed-card">
+              <div class="metric-heading"><span class="metric-icon speed-icon" aria-hidden="true">↗</span><span>YOUR SPEED</span><span class="metric-menu">···</span></div>
+              <div class="metric-value">— <span>mph</span></div>
+              <p class="metric-caption"><span class="metric-dot mint"></span> Waiting for ride</p>
+            </article>
+            <article class="metric-card force-card">
+              <div class="metric-heading"><span class="metric-icon force-icon" aria-hidden="true">✳</span><span>RIDER G-FORCE</span><span class="metric-menu">···</span></div>
+              <div class="metric-value">— <span>g</span></div>
+              <p class="metric-caption"><span class="metric-dot coral"></span> Vertical load</p>
+            </article>
+            <article class="metric-card energy-card">
+              <div class="metric-heading"><span class="metric-icon energy-icon" aria-hidden="true">⌁</span><span>IDEAL SPEED</span><span class="metric-menu">···</span></div>
+              <div class="metric-value">— <span>mph</span></div>
+              <p class="metric-caption">Frictionless reference</p>
+            </article>
+          </div>
+
+          <div class="ride-grid">
+            <section class="track-card ride-track-card" aria-label="Ride track preview">
+              <div class="card-toolbar">
+                <span class="canvas-label"><span class="canvas-dot"></span> TRACK VIEW</span>
+                <span class="canvas-hint">Cart position appears here during a ride</span>
+                <span class="ride-status-pill">READY</span>
+              </div>
+              <div class="track-canvas ride-canvas">
+                <svg class="track-art" viewBox="0 0 1000 470" role="img" aria-labelledby="ride-track-title ride-track-desc">
+                  <title id="ride-track-title">Ride screen track preview</title>
+                  <desc id="ride-track-desc">The same example track, with the cart at the starting crest and a finish flag.</desc>
+                  <path class="hill-fill" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252 L944 420 L56 420 Z"></path>
+                  <path class="track-support" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
+                  <path class="track-rail" d="M56 133 C134 134 147 355 260 360 C356 363 355 192 481 190 C599 187 577 326 694 328 C797 329 816 244 944 252"></path>
+                  <g class="cart-illustration" transform="translate(77 118)">
+                    <rect x="0" y="12" width="48" height="26" rx="8"></rect>
+                    <circle cx="12" cy="42" r="5"></circle><circle cx="37" cy="42" r="5"></circle>
+                    <circle class="rider-head" cx="25" cy="2" r="7"></circle>
+                    <path class="rider-body" d="M25 10v12m0-7-9 7m9-7 9 6m-9 1-7 10m7-10 8 9"></path>
+                  </g>
+                  <g class="finish-flag" transform="translate(944 252)">
+                    <path d="M0 0v-48" class="flag-pole"></path>
+                    <path d="M2-47h48l-10 12 10 12H2z" class="flag-cloth"></path>
+                  </g>
+                </svg>
+                <div class="track-position-label"><span class="position-pulse"></span> STARTING CREST</div>
+              </div>
+            </section>
+            <section class="chart-card">
+              <div class="chart-heading">
+                <div><p class="eyebrow">RIDE DATA</p><h3>Speed &amp; G-force</h3></div>
+                <button class="range-button" type="button" disabled>Along track <span aria-hidden="true">⌄</span></button>
+              </div>
+              <div class="chart-legend">
+                <span><i class="chart-line speed-line"></i> Speed <b>mph</b></span>
+                <span><i class="chart-line force-line"></i> G-force <b>g</b></span>
+              </div>
+              <div class="chart-placeholder">
+                <div class="chart-y-labels"><span>HIGH</span><span>—</span><span>LOW</span></div>
+                <svg viewBox="0 0 500 170" role="img" aria-label="Empty chart placeholder for speed and G-force over track distance">
+                  <path class="chart-gridline" d="M0 18H500M0 82H500M0 146H500"></path>
+                  <path class="chart-axis" d="M0 0V146H500"></path>
+                  <path class="chart-speed-placeholder" d="M12 128 C75 124 90 72 145 82 S224 128 275 78 S350 30 390 67 S449 105 488 35"></path>
+                  <path class="chart-force-placeholder" d="M12 102 C66 111 99 133 145 116 S218 42 275 60 S339 129 390 108 S449 55 488 76"></path>
+                  <text x="0" y="165">START</text><text x="450" y="165">FINISH</text>
+                </svg>
+                <div class="chart-overlay">Graph fills in during a ride</div>
+              </div>
+              <div class="chart-footer"><span>Distance along track</span><span>LIVE DATA PREVIEW</span></div>
+            </section>
+          </div>
+
+          <div class="ride-footer">
+            <div class="narration-placeholder"><span class="sound-icon" aria-hidden="true">♫</span><span><strong>Spoken updates</strong><small>Speed and G-force read aloud</small></span><span class="toggle-placeholder" aria-hidden="true"><i></i></span></div>
+            <div class="ride-controls">
+              <button class="secondary-button" type="button" disabled>Ⅱ <span>Pause</span></button>
+              <button class="secondary-button" type="button" disabled>↻ <span>Reset</span></button>
+              <span class="mockup-note">Controls shown for layout only</span>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer class="page-footer"><span>COASTER LAB</span><span>A little physics. A lot of fun.</span><span>STAGE 01 MOCKUP</span></footer>
+    </div>
+  </body>
+</html>

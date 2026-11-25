@@ -55,3 +55,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Make necessary changes after reviewing the feasibility of the planned app stages.
 - **What you changed:** Reworked the Build stages in `spec.md` into six incremental steps, separating track geometry, ideal motion, G-force behavior, resistance and ride outcomes, and final feedback.
 - **Whether it worked:** Yes. The revised sequence isolates the higher-risk geometry and physics work and gives each stage concrete checks.
+
+## 10. Build Stage 1 mockup
+
+- **What I asked:** Build only Stage 1 from the Build stages section of `spec.md`.
+- **What you changed:** Added a static responsive editor and ride-preview layout in `index.html` and `styles.css`, with simple view switching in `app.js`. Track editing controls and ride controls are visual placeholders; no track editing or physics simulation was implemented.
+- **Whether it worked:** Yes. Opened the page in a browser, verified the Start ride and screen-switch navigation, and checked that common viewport widths do not cause horizontal overflow.
