@@ -90,8 +90,8 @@ Let a user design a 2D roller-coaster track, simulate a cart starting from rest 
 
 ### 2. Build the track model and editor
 
-- **Build:** World-to-screen coordinate mapping, a smooth curve representation, track rendering, point selection and dragging, adding and removing points, and basic track validation. Choose and document an interpolation method that produces usable track geometry for later motion and curvature calculations.
-- **Check:** Points remain anchored while edited; the curve updates predictably; invalid, zero-length, or looped tracks are rejected with a clear explanation; the start and finish are identifiable.
+- **Build:** Store control points in world coordinates (horizontal distance and height in meters) and map them to the screen. Interpolate them with a centripetal Catmull–Rom spline, represented as cubic Bézier spans and sampled in world coordinates for validation and later motion/curvature calculations. Render the track, support selecting and dragging points, keyboard adjustments, adding and removing points, and basic track validation.
+- **Check:** Points remain anchored while edited; the curve updates predictably; the start and finish stay at the horizontal bounds and intermediate points remain ordered; invalid, zero-length, self-crossing, or looped tracks are rejected with a clear explanation; the Start button is unavailable for invalid tracks.
 
 ### 3. Add ideal motion
 

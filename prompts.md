@@ -73,3 +73,9 @@ This log records requests and their outcomes in this workspace. Earlier entries 
 - **What I asked:** Show velocity, G-force, total potential energy, and ideal speed on the Track editor screen alongside the editable track.
 - **What you changed:** Added a four-metric placeholder strip to the editor track card and updated the Stage 1 check in `spec.md` to require all four measurements alongside the track in both screens.
 - **Whether it worked:** Yes. Browser checks confirmed all four labels are visible in the editor at 390px, 768px, and 1280px widths, with no horizontal overflow.
+
+## 13. Build Stage 2 track editor
+
+- **What I asked:** Build only Stage 2 from the Build stages section of `spec.md`.
+- **What you changed:** Implemented meter-based track coordinates, a sampled centripetal Catmull–Rom spline, interactive point selection/dragging/keyboard adjustment, add/remove controls, and track validation. Updated Stage 2 in `spec.md` to document the interpolation and ordering checks. No ride physics was added.
+- **Whether it worked:** Browser checks passed for add/remove, drag, keyboard edits, endpoint removal, the two-point minimum, invalid-track Start blocking, and responsive widths. A standalone `node --check` could not run because Node.js is unavailable; the browser loaded and exercised the script successfully.

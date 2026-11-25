@@ -179,6 +179,21 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .track-support { fill: none; stroke: #24352e; stroke-linecap: round; stroke-width: 18; }
 .track-rail { fill: none; stroke: #a9dbc2; stroke-linecap: round; stroke-width: 9; }
 .track-ties path { fill: none; stroke: #87988d; stroke-linecap: round; stroke-width: 3; opacity: .7; }
+.editor-track-art { touch-action: none; user-select: none; }
+#editor-control-points { pointer-events: none; }
+#editor-cart, #editor-finish { pointer-events: none; }
+.control-handle { cursor: grab; outline: none; pointer-events: all; }
+.control-handle:active { cursor: grabbing; }
+.handle-ring { fill: #fff; stroke: var(--green); stroke-width: 4; }
+.handle-core { fill: var(--green); }
+.control-handle.point-start .handle-ring { stroke: var(--coral); }
+.control-handle.point-start .handle-core { fill: var(--coral); }
+.control-handle.point-finish .handle-ring { stroke: #d7ad3e; }
+.control-handle.is-selected .handle-ring { stroke: var(--coral); stroke-width: 5; }
+.control-handle:focus .handle-ring { stroke: var(--ink); stroke-width: 4; }
+.track-card.is-invalid #editor-support { stroke: #a94737; }
+.track-card.is-invalid #editor-rail { stroke: #efb4a8; }
+.track-card.is-invalid #editor-fill { fill: #fae7e2; }
 .track-point circle:first-child { fill: #fff; stroke: var(--green); stroke-width: 4; }
 .track-point .point-core { fill: var(--green); stroke: none; }
 .point-start circle:first-child { stroke: var(--coral); }
@@ -200,6 +215,8 @@ h1 { margin-bottom: 7px; font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.
 .canvas-footer { display: flex; min-height: 42px; align-items: center; justify-content: space-between; padding: 0 18px; border-top: 1px solid #edf0ec; color: #8c9890; font-size: 9px; }
 .canvas-footer > span:first-child { display: flex; align-items: center; gap: 6px; }
 .tiny-check { color: var(--green); font-size: 13px; font-weight: 700; }
+.tiny-check.is-invalid { color: #b94a3b; }
+.canvas-footer #track-validation { line-height: 1.35; }
 .canvas-footer > span:last-child { font-size: 8px; font-weight: 700; letter-spacing: .13em; }
 
 .editor-sidebar { display: grid; gap: 14px; }
